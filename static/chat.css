@@ -1,0 +1,359 @@
+/* ============================= */
+/* 🌌 FULL MOBILE SPACE CHAT CSS */
+/* ============================= */
+
+html, body {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  color: white;
+  overflow: hidden;
+  background: radial-gradient(circle at top, #111827, #05070f);
+  height: 100svh; /* Small viewport height for keyboard handling */
+  position: relative;
+}
+
+/* ============================= */
+/* 💬 CHAT CONTAINER (Universe) */
+/* ============================= */
+
+.chat-container {
+  max-width: 500px;
+  margin: auto;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  position: fixed; /* ← Important: Lock the container to viewport */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 5;
+}
+
+/* ⭐ Stars Background Inside Chat */
+.chat-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, white, transparent),
+    radial-gradient(1px 1px at 30% 80%, white, transparent),
+    radial-gradient(1px 1px at 50% 40%, white, transparent),
+    radial-gradient(1px 1px at 70% 10%, white, transparent),
+    radial-gradient(1px 1px at 90% 60%, white, transparent),
+    radial-gradient(2px 2px at 20% 50%, white, transparent),
+    radial-gradient(2px 2px at 60% 15%, white, transparent),
+    radial-gradient(2px 2px at 80% 70%, white, transparent),
+    radial-gradient(1px 1px at 15% 95%, white, transparent),
+    radial-gradient(1px 1px at 95% 5%, white, transparent);
+  background-repeat: repeat;
+  background-size: 250px 250px;
+  opacity: 0.35;
+  z-index: -2;
+  animation: twinkle 4s infinite alternate;
+  pointer-events: none;
+}
+
+/* 🌠 Shooting Star Inside Chat */
+.chat-container::after {
+  content: "";
+  position: absolute;
+  top: 25%;
+  left: -300px;
+  width: 280px;
+  height: 2px;
+  background: linear-gradient(90deg, white, transparent);
+  opacity: 0.7;
+  transform: rotate(25deg);
+  z-index: -1;
+  animation: shootMobile 5s linear infinite;
+  pointer-events: none;
+}
+
+/* ✨ Stars Twinkle Animation */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.8; }
+}
+
+/* 🌠 Shooting Star Movement */
+@keyframes shootMobile {
+  0% {
+    transform: translateX(0) translateY(0) rotate(25deg);
+    opacity: 0;
+  }
+  15% { opacity: 1; }
+  50% {
+    transform: translateX(900px) translateY(600px) rotate(25deg);
+    opacity: 0;
+  }
+  100% { opacity: 0; }
+}
+
+/* ============================= */
+/* HEADER */
+/* ============================= */
+
+.chat-header {
+  background: rgba(18, 26, 43, 0.92);
+  padding: 18px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  border-bottom: 1px solid #222;
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* ============================= */
+/* CHAT BOX */
+/* ============================= */
+
+.chat-box {
+  flex: 1;
+  padding: 15px;
+  padding-bottom: 90px; /* Space for fixed input */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================= */
+/* MESSAGE BUBBLES */
+/* ============================= */
+
+.msg {
+  padding: 12px 14px;
+  border-radius: 16px;
+  max-width: 80%;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.msg.ai {
+  background: rgba(31, 41, 55, 0.92);
+  align-self: flex-start;
+}
+
+.msg.user {
+  background: rgba(59, 130, 246, 0.95);
+  align-self: flex-end;
+}
+
+/* Typing Indicator */
+.typing {
+  font-size: 13px;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+#typingIndicator {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* ============================= */
+/* INPUT AREA */
+/* ============================= */
+
+.chat-input {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  padding: 12px;
+  background: rgba(18, 26, 43, 0.92);
+  border-top: 1px solid #222;
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  line-height:1.4;
+}
+
+.chat-input button {
+  margin-left: 10px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #3b82f6;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+}
+
+.chat-input button:hover {
+  background: #2563eb;
+}
+
+/* ============================= */
+/* 🎨 TEMPLATE ICON BUTTON */
+/* ============================= */
+
+.template-icon {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: white;
+}
+
+/* ============================= */
+/* 🎨 TEMPLATE POPUP */
+/* ============================= */
+
+.template-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  overflow: auto;
+  padding: 40px 0;
+}
+
+.popup-box {
+  background: #0f172a;
+  padding: 25px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 25px;
+  margin-top: 15px;
+}
+
+.template-card {
+  background: #1e2b45;
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.template-card img {
+  width: 100%;
+  height: auto;
+  max-height: 600px;
+  object-fit: contain;
+  background: #0f172a;
+}
+
+.template-card p {
+  margin-top: 10px;
+  color: white;
+  font-weight: bold;
+}
+
+.template-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+}
+
+/* ✅ Selected Template Highlight */
+.template-card.selected {
+  border: 2px solid white;
+  background: rgba(59, 130, 246, 0.8);
+}
+
+/* ✅ Generate Buttons */
+.generate-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  background: #22c55e;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+}
+
+.generate-btn:hover {
+  background: #16a34a;
+}
+
+.close-btn {
+  margin-top: 18px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #3b82f6;
+  color: white;
+  cursor: pointer;
+}
+
+/* ============================= */
+/* 📱 SMALL MOBILE FIX */
+/* ============================= */
+
+@media (max-width: 480px) {
+  .chat-container {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .chat-input {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .msg {
+    max-width: 90%;
+    font-size: 13px;
+  }
+
+  .chat-input input {
+    font-size: 16px !important;
+  }
+
+  .chat-input button {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .chat-box {
+    padding-bottom: 80px; /* Adjust for smaller keyboards */
+  }
+}

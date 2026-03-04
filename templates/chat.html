@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0,
+ maximum-scale=1.0, user-scalable=no">
+  <title>Resume Chat</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
+</head>
+
+<body>
+
+<div class="shooting-star one"></div>
+<div class="shooting-star two"></div>
+<div class="shooting-star three"></div>
+
+<div class="chat-container">
+
+  <!-- Header -->
+  <div class="chat-header">
+
+  <span>💬 Resume Chat Assistant     .</span>
+  </br>
+  </br><button id="newResumeBtn" 
+style="margin-bottom:10px; padding:8px 15px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer;">
+🔄 Start New Resume
+</button>
+
+  <!-- 🎨 Template Icon Button -->
+  <button id="templateBtn" class="template-icon">
+    🎨<br>
+	choose template
+  </button>
+
+</div>
+  <!-- Chat Messages -->
+  <div class="chat-box" id="chatBox">
+
+    <!-- First AI Message -->
+    
+
+  </div>
+
+  <!-- Input -->
+  <div class="chat-input">
+    <input id="user-input" type="text" placeholder="Type your message..." />
+	
+    <button id="send-btn">Send</button>
+  </div>
+<!-- =============================== -->
+<!-- 🎨 TEMPLATE SELECT POPUP -->
+<!-- =============================== -->
+<!-- =============================== -->
+<!-- 🎨 TEMPLATE SELECT POPUP -->
+<!-- =============================== -->
+<div id="templatePopup" class="template-popup">
+
+  <div class="popup-box">
+    <h3>Select Resume Template</h3>
+<!-- Close -->
+    <button id="closeTemplate" class="close-btn">
+      Close
+    </button>
+    <!-- ✅ Resume Templates -->
+    <div class="template-grid">
+
+  <div class="template-card" data-template="1">
+    <img src="{{ url_for('static', filename='template1.jpg') }}">
+    <p>Template 1</p>
+  </div>
+
+  <div class="template-card" data-template="2">
+    <img src="{{ url_for('static', filename='template2.jpg') }}">
+    <p>Template 2</p>
+  </div>
+
+  <div class="template-card" data-template="3">
+    <img src="{{ url_for('static', filename='template3.jpg') }}">
+    <p>Template 3</p>
+  </div>
+
+</div>
+
+    
+  </div>
+
+</div>
+</div>
+
+<!-- JS -->
+<script src="{{ url_for('static', filename='chat.js') }}"></script>
+
+</body>
+</html>

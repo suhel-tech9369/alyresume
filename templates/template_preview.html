@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Template Preview</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0f19;
+      color: white;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: #121a2b;
+    }
+
+    .back-btn {
+      background: #3b82f6;
+      padding: 10px 15px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px;
+    }
+
+    .tab {
+      padding: 10px 15px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .tab.active {
+      background: #22c55e;
+    }
+
+    .content-box {
+      max-width: 900px;
+      margin: auto;
+      background: #121a2b;
+      padding: 20px;
+      border-radius: 15px;
+      white-space: pre-wrap;
+      min-height: 400px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ✅ Top Bar -->
+  <div class="top-bar">
+    <a href="/chat" class="back-btn">⬅ Back to Chat</a>
+    <h3>Resume Template Preview</h3>
+  </div>
+
+  <!-- ✅ Tabs -->
+  <div class="tabs">
+    <div class="tab active">📄 Resume</div>
+    <div class="tab">✍ Cover Letter</div>
+    <div class="tab">🎤 Questions</div>
+  </div>
+
+  <!-- ✅ Resume Preview -->
+  <div class="content-box">
+    {{ resume_text }}
+  </div>
+
+</body>
+</html>

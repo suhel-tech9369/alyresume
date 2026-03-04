@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Download Preview</title>
+<style>
+body{
+font-family:Arial;
+padding:40px;
+background:#f4f4f4;
+}
+.preview-box{
+background:white;
+border:1px solid #ccc;
+padding:30px;
+margin-bottom:40px;
+white-space:pre-line;
+}
+.pay-btn{
+background:#2563eb;
+color:white;
+padding:12px 25px;
+border:none;
+font-size:16px;
+cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<h2>Resume Preview</h2>
+<div class="preview-box">
+{{ resume_text }}
+</div>
+
+{% if include_cover == "true" %}
+<h2>Cover Letter Preview</h2>
+<div class="preview-box">
+{{ cover_text }}
+</div>
+{% endif %}
+
+<button class="pay-btn" onclick="payNow()">Pay & Download</button>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+function payNow(){
+
+fetch("/create-order",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+cover_letter: {{ include_cover|tojson }}
+})
+})
+.then(res=>res.json())
+.then(data=>{
+
+var options={
+"key":data.key,
+"amount":data.amount,
+"currency":"INR",
+"name":"AI Resume Maker",
+"order_id":data.order_id,
+handler:function(response){
+
+fetch("/verify-payment",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(response)
+})
+.then(res=>res.json())
+.then(data=>{
+if(data.status==="success"){
+window.location.href="/download-files?token="+data.token;
+}
+});
+}
+};
+
+var rzp1=new Razorpay(options);
+rzp1.open();
+
+});
+
+}
+</script>
+
+</body>
+</html>

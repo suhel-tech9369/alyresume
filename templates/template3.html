@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Template 3</title>
+
+<link href=
+"https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" 
+rel="stylesheet">
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='template3.css') }}">
+
+<style>
+
+
+
+</style>
+
+</head>
+
+<body>
+
+<!-- 🔥 TOP BUTTON BAR -->
+<div class="top-bar" style="text-align:center; margin:20px;">
+
+  <button onclick="window.location.href='/chat'">⬅ Back</button>
+
+  <button onclick="downloadAllPDF()">⬇ Download PDF</button>
+
+  <button onclick="addSection()">➕ Add Section</button>
+
+  <button onclick="addSidebarSection()">➕ Add Sidebar Section</button>
+
+  <button id="coverBtn" onclick="generateCoverLetter()">
+    📄 Generate Cover Letter
+  </button>
+<label for="photoInput" class="upload-btn">
+   📷Photo
+</label>
+
+<input id="photoInput"
+       type="file"
+       accept="image/*"
+       onchange="loadPhoto(event)"
+       hidden>
+</div>
+
+
+<!-- ================= HEADER ================= -->
+<div class="top-header">
+
+  {% if photo %}
+  <div class="photo">
+      <img id="profileImg"
+           src="{{ url_for('static', filename='uploads/' + photo) }}">
+  </div>
+  {% endif %}
+
+  <div class="name-area">
+    <h1 contenteditable="true">
+      {{ name.content }}
+    </h1>
+
+    <h2 contenteditable="true">
+      {{ job_role if job_role else "YOUR PROFESSIONAL TITLE" }}
+    </h2>
+  </div>
+
+</div>
+
+ 
+
+<!-- ================= MAIN LAYOUT ================= -->
+<div class="container">
+<div class="watermark-preview">PREVIEW</div>
+
+  <!-- ===== LEFT SIDEBAR ===== -->
+  <div class="left" id="sidebarDynamic">
+
+    <div class="sidebar-section">
+      <h3 contenteditable="true">
+        CONTACT
+        <button onclick="this.parentElement.parentElement.remove()">X</button>
+      </h3>
+      <p contenteditable="true" style="white-space:pre-line;">
+        {{ contact.content }}
+      </p>
+    </div>
+
+    <div class="sidebar-section">
+      <h3 contenteditable="true">
+        SKILLS
+        <button onclick="this.parentElement.parentElement.remove()">X</button>
+      </h3>
+      <p contenteditable="true" style="white-space:pre-line;">
+        {{ skills.content }}
+      </p>
+    </div>
+
+    <div class="sidebar-section">
+      <h3 contenteditable="true">
+        LANGUAGES
+        <button onclick="this.parentElement.parentElement.remove()">X</button>
+      </h3>
+      <p contenteditable="true" style="white-space:pre-line;">
+        {{ languages.content }}
+      </p>
+    </div>
+<div class="sidebar-section">
+  <h3 contenteditable="true">
+    HOBBIES
+    <button onclick="this.parentElement.parentElement.remove()">X</button>
+  </h3>
+  <p contenteditable="true">
+Add hobbies here (optional).
+Remove this section if not needed.
+</p>
+</div>
+
+<div class="sidebar-section">
+  <h3 contenteditable="true">
+    LINKS
+    <button onclick="this.parentElement.parentElement.remove()">X</button>
+  </h3>
+  <p contenteditable="true">
+Add LinkedIn / Portfolio / Website links here (optional).
+Remove this section if not needed.
+</p>
+</div>
+  </div>
+
+
+  <!-- ===== RIGHT CONTENT ===== -->
+  <div class="right content">
+
+    <section>
+      <h3 contenteditable="true">PROFILE<button 
+	  onclick="this.parentElement.parentElement.remove()">X</button></h3>
+      <p contenteditable="true" style="white-space:pre-line;">
+        {{ summary.content }}
+      </p>
+    </section>
+
+<section>
+  <h3 contenteditable="true">
+    EDUCATION
+    <button onclick="this.parentElement.parentElement.remove()">X</button>
+  </h3>
+
+  <p contenteditable="true" style="white-space:pre-line;">
+    {{ education.content }}
+  </p>
+</section>
+
+    <section>
+      <h3 contenteditable="true">PROFESSIONAL EXPERIENCE<button 
+	  onclick="this.parentElement.parentElement.remove()">X</button></h3>
+      <p contenteditable="true" style="white-space:pre-line;">
+        {{ experience.content }}
+      </p>
+    </section>
+
+    <section>
+      <h3 contenteditable="true">CERTIFICATIONS<button 
+	  onclick="this.parentElement.parentElement.remove()">X</button></h3>
+      <p contenteditable="true" style="white-space:pre-line;">
+        {{ certifications.content }}
+      </p>
+    </section>
+
+    <section>
+      <h3 contenteditable="true">PROJECTS<button 
+	  onclick="this.parentElement.parentElement.remove()">X</button></h3>
+      <p contenteditable="true" style="white-space:pre-line;">
+        {{ projects.content }}
+      </p>
+    </section>
+
+<!-- EXTRA SECTIONS (GPT / NUMBER BASED) -->
+{% for num,sec in extra_sections.items() %}
+<section>
+
+  <h3 contenteditable="true">
+    {{ sec.title }}
+    <button onclick="this.parentElement.parentElement.remove()">X</button>
+  </h3>
+
+  <p contenteditable="true" style="white-space:pre-line;">
+    {{ sec.content }}
+  </p>
+
+</section>
+{% endfor %}
+  </div>
+
+</div>
+
+
+<!-- ================= FUNCTIONS ================= -->
+<script>
+
+let coverLetterText = "";
+
+
+let isPaid = false;
+
+// Ctrl + P disable
+document.addEventListener("keydown", function(e){
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+    if(!isPaid){
+      e.preventDefault();
+      alert("Please complete payment to download.");
+    }
+  }
+});
+
+/* ADD RIGHT SECTION */
+function addSection(){
+
+  let sec = document.createElement("section");
+
+  sec.innerHTML = `
+    <h3 contenteditable="true">
+      New Section
+      <button onclick="this.parentElement.parentElement.remove()">X</button>
+    </h3>
+    <p contenteditable="true">Write here...</p>
+  `;
+
+  // References section ढूँढो
+  let refSection = Array.from(
+    document.querySelectorAll(".content section")
+  ).find(sec =>
+    sec.innerText.toLowerCase().includes("reference")
+  );
+
+  if(refSection){
+    refSection.parentNode.insertBefore(sec, refSection);
+  }
+  else{
+    document.querySelector(".content").appendChild(sec);
+  }
+
+}
+
+
+/* ADD SIDEBAR SECTION */
+function addSidebarSection(){
+
+  let sec = document.createElement("div");
+
+  sec.className = "sidebar-section";
+
+  sec.innerHTML = `
+    <h3 contenteditable="true">
+      New Sidebar
+      <button onclick="this.parentElement.parentElement.remove()">X</button>
+    </h3>
+    <p contenteditable="true">Write here...</p>
+  `;
+
+  document.getElementById("sidebarDynamic").appendChild(sec);
+}
+
+
+/* PHOTO LOAD */
+function loadPhoto(event){
+
+  let file = event.target.files[0];
+
+  let formData = new FormData();
+  formData.append("photo", file);
+
+  fetch("/upload-photo", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if(data.status === "success"){
+
+      // अगर photo div exist नहीं करता तो बनाओ
+      let header = document.querySelector(".top-header");
+      let existingPhoto = document.querySelector(".photo");
+
+      if(!existingPhoto){
+
+        let photoDiv = document.createElement("div");
+        photoDiv.className = "photo";
+
+        let img = document.createElement("img");
+        img.id = "profileImg";
+        img.src = data.url;
+
+        photoDiv.appendChild(img);
+
+        header.insertBefore(photoDiv, header.firstChild);
+
+      } else {
+
+        document.getElementById("profileImg").src = data.url;
+
+      }
+
+    }
+
+  });
+
+}
+
+
+/* COVER LETTER */
+function generateCoverLetter(){
+
+  document.getElementById("coverLoader").style.display="flex";
+
+  document.getElementById("coverBtn").innerText =
+  "Generating... ⏳";
+  document.getElementById("coverBtn").disabled = true;
+
+  fetch("/generate-cover-letter")
+  .then(res => res.json())
+  .then(data => {
+
+    document.getElementById("coverLoader").style.display="none";
+
+    document.getElementById("coverBtn").innerText =
+    "📄 Generate Cover Letter";
+    document.getElementById("coverBtn").disabled = false;
+
+    document.getElementById("coverModal").style.display="flex";
+
+    document.getElementById("coverText").value =
+    data.cover_letter;
+
+  });
+}
+
+
+/* SAVE */
+function saveCoverLetter(){
+
+  coverLetterText =
+  document.getElementById("coverText").value;
+
+  document.getElementById("coverModal").style.display="none";
+
+  alert("Cover Letter Saved ✅");
+}
+
+
+/* CLOSE */
+function closeCover(){
+  document.getElementById("coverModal").style.display="none";
+}
+
+
+/* DOWNLOAD BOTH */
+function downloadAllPDF(){
+document.getElementById("downloadLoader").style.display = "flex";
+
+ let container = document.querySelector(".container").cloneNode(true);
+
+// 🔥 watermark remove only for download
+let wm = container.querySelector(".watermark-preview");
+if(wm){
+  wm.remove();
+}
+
+let editedHTML = container.outerHTML;
+  // 🔥 यह लाइन जरूरी है
+  let currentTemplate = window.location.pathname;
+
+  fetch("/save-edited-resume", {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+          html: editedHTML,
+          template: currentTemplate   // 🔥 यही असली चीज है
+      })
+  })
+  .then(() => {
+
+      let includeCover = coverLetterText !== "";
+
+      fetch("/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          cover_letter: includeCover
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+	  if(data.skip_payment){
+
+    fetch("/download-resume", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          template: currentTemplate,
+		  html:editedHTML
+        })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "Resume.pdf";
+        a.click();
+        window.URL.revokeObjectURL(url);
+		document.getElementById("downloadLoader").style.display = "none";
+
+    });
+
+    if(includeCover){
+        fetch("/download-cover-letter", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ text: coverLetterText })
+        })
+        .then(res=>res.blob())
+        .then(blob=>{
+            let url = window.URL.createObjectURL(blob);
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "CoverLetter.pdf";
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+    }
+
+    return; 
+}
+
+        var options = {
+          key: data.key,
+          amount: data.amount,
+          currency: "INR",
+          name: "M Suhel",
+          description: includeCover ?
+              "Resume + Cover Letter" :
+              "Resume Download",
+          order_id: data.order_id,
+		  modal: {
+    ondismiss: function(){
+        document.getElementById("downloadLoader").style.display = "none";
+    }
+},
+
+          handler: function (response){
+
+            fetch("/verify-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+
+              if(data.status === "success"){
+
+                // 🔥 यहाँ भी template भेजना है
+                fetch("/download-resume", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    template: currentTemplate,
+					html:editedHTML
+                  })
+                })
+                .then(res => res.blob())
+                .then(blob => {
+
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement("a");
+                    a.href = url;
+                    a.download = "Resume.pdf";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+					document.getElementById("downloadLoader").style.display = "none";
+
+                });
+			// 🔥 Cover Letter Download
+				if(includeCover){
+
+				  fetch("/download-cover-letter", {
+					method: "POST",
+					headers: {
+					  "Content-Type": "application/json"
+					},
+					body: JSON.stringify({
+					  text: coverLetterText
+					})
+				  })
+				  .then(res => res.blob())
+				  .then(blob => {
+
+					  let url = window.URL.createObjectURL(blob);
+					  let a = document.createElement("a");
+					  a.href = url;
+					  a.download = "CoverLetter.pdf";
+					  a.click();
+					  window.URL.revokeObjectURL(url);
+
+				  });
+
+				}
+
+              } else {
+                alert("Payment verification failed ❌");
+              }
+
+            });
+
+          },
+          theme: {
+            color: "#3b82f6"
+          }
+        };
+
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+		
+
+      })
+.catch(err => {
+    console.error(err);
+    document.getElementById("downloadLoader").style.display = "none";
+    alert("Something went wrong. Please try again.");
+	});
+  });
+
+}
+</script>
+<script>
+
+const applyCountry = "{{ apply_country }}";
+
+window.onload = function(){
+
+  const strictCountries = [
+    "usa","united states","america",
+    "uk","united kingdom",
+    "canada","australia",
+    "ireland","new zealand"
+  ];
+
+  if(
+    applyCountry &&
+    strictCountries.includes(
+      applyCountry.toLowerCase()
+    )
+  ){
+
+    alert(
+"⚠️ You are applying in a country where resume photo is not recommended.\nPlease avoid adding photo."
+    );
+
+  }
+
+};
+
+</script>
+
+<!-- LOADER -->
+<div id="coverLoader" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+z-index:9999;
+color:white;
+font-size:22px;
+font-weight:bold;
+">
+
+Please Wait… Generating Cover Letter ⏳
+
+</div>
+
+
+<!-- MODAL -->
+<div id="coverModal" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+z-index:999;
+">
+
+<div class="cover-letter-paper">
+
+  <h2>Cover Letter</h2>
+
+  <textarea id="coverText"
+  class="cover-textarea"></textarea>
+
+  <br><br>
+
+  <button onclick="saveCoverLetter()">Save</button>
+  <button onclick="closeCover()">Cancel</button>
+
+</div>
+</div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<div id="downloadLoader" style="display:none;">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <p>Generating your PDF... Please wait</p>
+  </div>
+</div>
+</body>
+</html>

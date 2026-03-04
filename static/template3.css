@@ -1,0 +1,387 @@
+/* =========================
+   GLOBAL – A4 OPTIMIZED
+========================= */
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+body{
+  margin:0 auto;
+  width:210mm;
+  min-height:297mm;
+  background:#e5e5e5;
+  font-family:"Poppins", Arial, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+
+
+/* =========================
+   TOP HEADER (BLUE BAR)
+========================= */
+
+.top-header{
+  background:#cfcbb8;
+  padding:65px 100px;
+  display:flex;
+  align-items:center;
+  gap:35px;
+}
+
+.photo{
+  width:190px;
+  height:190px;
+  margin-left:-20px;
+  margin-top:-10px;
+  flex-shrink:0;
+  border-radius:50%;
+  overflow:hidden;
+  flex-shrink:0;
+}
+
+.photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.upload-btn{
+  background:#2f3e34;
+  color:white;
+  padding:6px 14px;
+  border-radius:4px;
+  font-size:13px;
+  cursor:pointer;
+  margin-left:10px;
+}
+
+#photoInput{
+  display:none;
+}
+
+@media print{
+  .upload-btn{
+    display:none !important;
+  }
+}
+
+
+
+/* =========================
+   NAME AREA
+========================= */
+
+.name-area{
+  width:100%;
+  text-align:left;
+  display:flex;
+  flex:1;
+  min-width:0;
+  flex-direction:column;
+  align-items:flex-start;
+  color:#2b3a30;
+}
+
+.name-area h1{
+  margin:0;
+  font-size:35px;
+  font-family:"Georgia", serif;
+  font-weight:600;
+  overflow-wrap:break-word;
+  white-space:normal;
+  word-break:break-word;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:#2f3e34;   /* Muted green */
+}
+
+
+
+.name-area h2{
+  margin-top:10px;
+  font-size:20px;
+  font-family:"Georgia", serif;
+  letter-spacing:2px;
+  color:#6b6b60;
+}
+
+/* =========================
+   MAIN LAYOUT
+========================= */
+
+.container{
+	border-left:1px solid #c8c4b8;
+	border-right:1px solid #c8c4b8;
+  display:flex;
+  align-items:stretch;
+  background:#ffffff;
+}
+
+
+
+/* =========================
+   LEFT SIDEBAR
+========================= */
+
+.left{
+  width:35%;
+  background:#f6f5ef;   /* Cream tone */
+  padding:40px 30px;
+  border-right:1px solid #d1cfc2;
+}
+
+
+
+.left p{
+  color:#5c584f;
+}
+
+
+
+/* =========================
+   RIGHT CONTENT
+========================= */
+
+.right{
+  width:65%;
+  background:white;
+  padding:50px 45px;
+}
+
+/* ===== SECTION HEADINGS – PREMIUM CLEAN ===== */
+
+.left h3,
+.right h3{
+  margin-top:28px;
+  margin-bottom:2px;
+  font-size:20px;
+  font-family:"Georgia", serif;
+  letter-spacing:1px;
+  color:#8b6f47;   /* Warm brown */
+  font-weight:600;
+}
+
+
+
+/* ===== TEXT IMPROVEMENT – CRISP ===== */
+
+p{
+  line-height:1.8;
+  font-size:15px;
+  font-weight:500;
+
+  letter-spacing:0.15px;
+  word-spacing:0.8px;
+
+  color:#55524a;
+
+  margin-top:0px;
+  margin-bottom:0;
+}
+
+
+
+/* =========================
+   REMOVE BUTTON
+========================= */
+
+.sidebar-section button,
+.content button{
+  background:#d11a2a;
+  color:white;
+  border:none;
+  font-size:11px;
+  padding:3px 7px;
+  cursor:pointer;
+  margin-left:10px;
+  border-radius:4px;
+}
+
+
+
+/* =========================
+   SPACING
+========================= */
+
+.sidebar-section{
+  margin-top:22px;
+}
+
+section{
+  margin-top:22px;
+}
+
+
+
+/* =========================
+   HEIGHT AUTO FIX
+========================= */
+
+.left,
+.right,
+.sidebar-section,
+section{
+  height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+}
+
+.left p,
+.right p{
+  white-space:pre-line;
+  word-wrap:break-word;
+}
+
+
+
+/* =========================
+   PRINT FIX
+========================= */
+
+@media print{
+
+  body{
+    background:white !important;
+  }
+
+  .top-header,
+  .left,
+  .right{
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .top-bar{
+    display:none !important;
+  }
+
+  .sidebar-section button,
+  .content button{
+    display:none !important;
+  }
+
+  .photo input{
+    display:none;
+  }
+
+}
+
+
+
+/* =========================
+   MOBILE PREVIEW LOCK
+========================= */
+
+@media (max-width:900px){
+  body{
+    min-width:1000px;
+  }
+  .container{
+    min-width:1000px;
+  }
+}
+
+
+
+/* =========================
+   COVER LETTER
+========================= */
+
+.cover-letter-paper{
+  background:white;
+  width:80%;
+  max-width:850px;
+  padding:45px;
+  border-radius:8px;
+  box-shadow:0 0 30px rgba(0,0,0,0.25);
+  font-family:"Times New Roman", serif;
+}
+
+.cover-letter-paper h2{
+  text-align:center;
+  margin-bottom:25px;
+  border-bottom:2px solid #000;
+  padding-bottom:10px;
+  letter-spacing:3px;
+}
+
+.cover-textarea{
+  width:100%;
+  height:420px;
+  border:none;
+  outline:none;
+  resize:none;
+  font-size:14px;
+  line-height:1.9;
+  font-family:"Times New Roman", serif;
+}
+
+.cover-letter-paper button{
+  background:#111;
+  color:white;
+  border:none;
+  padding:10px 18px;
+  margin-right:10px;
+  cursor:pointer;
+  border-radius:4px;
+}
+
+.cover-letter-paper button:hover{
+  background:#444;
+}
+.watermark-preview {
+    position: fixed;
+    top: 40%;
+    left: 15%;
+    font-size: 120px;
+    color: rgba(120, 120, 120, 0.08);
+    transform: rotate(-30deg);
+    pointer-events: none;
+    z-index: 9999;
+    font-weight: bold;
+    letter-spacing: 8px;
+}
+@media print {
+  button,
+  .save-btn,
+  .cancel-btn {
+    display: none !important;
+  }
+}
+#downloadLoader{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:99999;
+}
+
+.loader-box{
+  background:white;
+  padding:30px 40px;
+  border-radius:8px;
+  text-align:center;
+  font-family:Arial;
+}
+
+.spinner{
+  width:40px;
+  height:40px;
+  border:4px solid #ddd;
+  border-top:4px solid #3b82f6;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:0 auto 15px;
+}
+
+@keyframes spin{
+  0%{ transform:rotate(0deg); }
+  100%{ transform:rotate(360deg); }
+}
