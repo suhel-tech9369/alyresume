@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS payments (
 """)
 
 conn.commit()
-conn.close()
+
 
 from datetime import timedelta
 app.permanent_session_lifetime = timedelta(minutes=30)
