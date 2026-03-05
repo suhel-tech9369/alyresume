@@ -35,6 +35,23 @@ app = Flask(__name__)
 
 import sqlite3
 
+def ensure_payments_table():
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        payment_id TEXT,
+        order_id TEXT,
+        amount INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
 conn = sqlite3.connect("database.db", check_same_thread=False)
 c = conn.cursor()
 
@@ -1378,6 +1395,7 @@ def download_cover_letter():
 
 @app.route("/create-order", methods=["POST"])
 def create_order():
+    ensure_payments_table()
     from datetime import datetime, timedelta
 
     conn = sqlite3.connect("payments.db")
