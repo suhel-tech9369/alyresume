@@ -38,6 +38,25 @@ c = conn.cursor()
 from datetime import timedelta
 app.permanent_session_lifetime = timedelta(minutes=30)
 app.secret_key = os.getenv("SECRET_KEY")
+def ensure_payments_table():
+    conn = sqlite3.connect("payments.db")
+    c = conn.cursor()
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id TEXT,
+        payment_id TEXT,
+        signature TEXT,
+        amount INTEGER,
+        cover_letter BOOLEAN,
+        download_token TEXT,
+        created_at TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
 
 def init_db():
     conn = sqlite3.connect("payments.db")
@@ -1361,6 +1380,7 @@ def download_cover_letter():
 
 @app.route("/create-order", methods=["POST"])
 def create_order():
+    ensure_payments_table()
     from datetime import datetime, timedelta
 
     conn = sqlite3.connect("payments.db")
@@ -1752,6 +1772,6 @@ def reset_session():
     session.clear()
     return {"status": "reset_done"}
 if __name__ == "__main__":
-    init_db()
+    ensure_payments_table()
     port = int(os.environ.get("PORT",10000))
     app.run(host="0.0.0.0",port=port)
