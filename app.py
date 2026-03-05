@@ -33,29 +33,8 @@ razorpay_client = razorpay.Client(
 # ===============================
 app = Flask(__name__)
 
-import sqlite3
-
-def ensure_payments_table():
-    conn = sqlite3.connect("payments.db")
-    c = conn.cursor()
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS payments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        payment_id TEXT,
-        order_id TEXT,
-        amount INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
 conn = sqlite3.connect("payments.db", check_same_thread=False)
 c = conn.cursor()
-
-
 from datetime import timedelta
 app.permanent_session_lifetime = timedelta(minutes=30)
 app.secret_key = os.getenv("SECRET_KEY")
@@ -63,6 +42,7 @@ app.secret_key = os.getenv("SECRET_KEY")
 def init_db():
     conn = sqlite3.connect("payments.db")
     c = conn.cursor()
+    c.execute("DROP TABLE IF EXISTS payments")
 
     c.execute("""
         CREATE TABLE IF NOT EXISTS payments (
@@ -79,6 +59,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+    init_db()
 # ===============================
 # Helper: Clean User Input
 # ===============================
@@ -1383,7 +1364,6 @@ def download_cover_letter():
 
 @app.route("/create-order", methods=["POST"])
 def create_order():
-    ensure_payments_table()
     from datetime import datetime, timedelta
 
     conn = sqlite3.connect("payments.db")
@@ -1414,8 +1394,7 @@ def create_order():
         amount = 5900 if include_cover else 4900
 
         print("AMOUNT:", amount)
-        print("KEY:", os.getenv("RAZORPAY_KEY_ID"))
-        print("SECRET:", os.getenv("RAZORPAY_SECRET"))
+
 
         order = razorpay_client.order.create({
             "amount": amount,
