@@ -1645,7 +1645,7 @@ def download_resume():
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage", "__single-process", "__disable-gpu"]
+            args=["--no-sandbox", "--disable-dev-shm-usage", "--single-process", "--disable-gpu"]
         )
         context = browser.new_context(viewport={"width": 1200, "height": 1600})
 
@@ -1669,7 +1669,7 @@ def download_resume():
 
         # 🔥 यहाँ fallback नहीं चाहिए
         page.goto(
-            f"https://{request.host}{template_path}",
+            f"http://{request.host}{template_path}",
             wait_until="networkidle"
         )
         page.add_style_tag(content="""
@@ -1700,8 +1700,10 @@ def download_resume():
                 "right": "0mm"
             }
         )
-
+        page.close()
+        context.close()
         browser.close()
+
 
 
     return send_file(
