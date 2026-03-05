@@ -1645,10 +1645,9 @@ def download_resume():
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage"]
+            args=["--no-sandbox", "--disable-dev-shm-usage", "__single-process", "__disable-gpu"]
         )
-        context = browser.new_context()
-        viewport = {"width": 1200, "height": 1600}
+        context = browser.new_context(viewport={"width": 1200, "height": 1600})
 
         session_cookie = request.cookies.get("session")
 
