@@ -1648,6 +1648,7 @@ def download_resume():
             args=["--no-sandbox", "--disable-dev-shm-usage"]
         )
         context = browser.new_context()
+        viewport = {"width": 1200, "height": 1600}
 
         session_cookie = request.cookies.get("session")
 
@@ -1660,6 +1661,7 @@ def download_resume():
             }])
 
         page = context.new_page()
+        page.set_default_timeout(60000)
 
         edited_html = data.get("html")
 
@@ -1668,7 +1670,7 @@ def download_resume():
 
         # 🔥 यहाँ fallback नहीं चाहिए
         page.goto(
-            f"http://{request.host}{template_path}",
+            f"https://{request.host}{template_path}",
             wait_until="networkidle"
         )
         page.add_style_tag(content="""
