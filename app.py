@@ -36,7 +36,7 @@ app = Flask(__name__)
 import sqlite3
 
 def ensure_payments_table():
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("payments.db")
     c = conn.cursor()
 
     c.execute("""
@@ -52,20 +52,8 @@ def ensure_payments_table():
     conn.commit()
     conn.close()
 
-conn = sqlite3.connect("database.db", check_same_thread=False)
+conn = sqlite3.connect("payments.db", check_same_thread=False)
 c = conn.cursor()
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS payments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    payment_id TEXT,
-    order_id TEXT,
-    amount INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-""")
-
-conn.commit()
 
 
 from datetime import timedelta
