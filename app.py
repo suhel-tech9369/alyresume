@@ -276,6 +276,8 @@ def api_chat():
     msg_lower = user_message.lower()
 
     if user_message == "__start__":
+        session["step"] = "language"
+        session["resume_data"] = {}
         return jsonify({"reply": "👋 Which language do you want? (English / Hindi)"})
 
 
