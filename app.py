@@ -1763,4 +1763,5 @@ def reset_session():
     return {"status": "reset_done"}
 if __name__ == "__main__":
     init_db()
-    app.run(host="0.0.0.0",port=5000,debug=True)
+    port = int(os.environ.get("PORT",10000))
+    app.run(host="0.0.0.0",port=port)
