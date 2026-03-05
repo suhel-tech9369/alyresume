@@ -30,7 +30,7 @@ body{
     #d6c9b6 60%,
     #ece8df 60%
   );
-  padding:60px 40px;
+  padding:50px 40px;
   display:flex;
   align-items:center;
 }
@@ -38,8 +38,8 @@ body{
 /* PHOTO */
 
 .photo{
-  width:140px;
-  height:140px;
+  width:150px;
+  height:150px;
   border-radius:50%;
   overflow:hidden;
   margin-right:30px;
@@ -48,7 +48,8 @@ body{
   justify-content:center;
   background:#d6c9b6;
   flex-shrink:0;
-  border:1px solid #c8c4b8;   /* subtle border like template3 */
+  border:4px solid rgba(255,255,255,0.15);
+  box-shadow:0 10px 25px rgba(0,0,0,0.4);
 }
 
 .photo img{
