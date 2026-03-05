@@ -1501,8 +1501,9 @@ def verify_payment():
                         "token":download_token})
 
     except Exception as e:
+        print("VERIFY ERROR:",e)
 
-        return jsonify({"status": "failed"}), 400
+        return jsonify({"status": "failed", "error":str(e)}), 400
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin_login():
