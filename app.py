@@ -1636,6 +1636,11 @@ def admin_logout():
 
 @app.route("/download-resume", methods=["POST"])
 def download_resume():
+    # 🔒 Payment check
+    if not session.get("paid"):
+        return jsonify({
+            "error": "Payment required"
+        }), 403
 
     data = request.get_json()
     template_path = data.get("template")
