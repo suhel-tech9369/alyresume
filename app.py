@@ -1772,6 +1772,6 @@ def reset_session():
     session.clear()
     return {"status": "reset_done"}
 if __name__ == "__main__":
-    ensure_payments_table()
+
     port = int(os.environ.get("PORT",10000))
     app.run(host="0.0.0.0",port=port)
