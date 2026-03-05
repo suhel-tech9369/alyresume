@@ -42,8 +42,6 @@ app.secret_key = os.getenv("SECRET_KEY")
 def init_db():
     conn = sqlite3.connect("payments.db")
     c = conn.cursor()
-    c.execute("DROP TABLE IF EXISTS payments")
-
     c.execute("""
         CREATE TABLE IF NOT EXISTS payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +57,6 @@ def init_db():
 
     conn.commit()
     conn.close()
-    init_db()
 # ===============================
 # Helper: Clean User Input
 # ===============================
