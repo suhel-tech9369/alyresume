@@ -32,6 +32,25 @@ razorpay_client = razorpay.Client(
 # Flask App
 # ===============================
 app = Flask(__name__)
+
+import sqlite3
+
+conn = sqlite3.connect("database.db")
+c = conn.cursor()
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    payment_id TEXT,
+    order_id TEXT,
+    amount INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+conn.commit()
+conn.close()
+
 from datetime import timedelta
 app.permanent_session_lifetime = timedelta(minutes=30)
 app.secret_key = os.getenv("SECRET_KEY")
