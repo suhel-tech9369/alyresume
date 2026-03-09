@@ -1669,29 +1669,13 @@ def download_resume():
             return "NO edited content found", 400
 
         # 🔥 यहाँ fallback नहीं चाहिए
-        page.goto(
-            f"http://{request.host}{template_path}",
-            wait_until="domcontentloaded",
-            timeout=60000
-        )
-        page.wait_for_timeout(2000)
+        page.set_content(edited_html, wait_until="domcontentloaded")
+        page.wait_for_timeout(500)
         page.add_style_tag(content="""
             .watermark-preview {
                 display: none !important;
             }
         """)
-
-        if edited_html:
-            page.evaluate("""
-                (htmlContent) => {
-                    const container = document.querySelector(".container");
-                    container.outerHTML = htmlContent;
-
-                    document.querySelectorAll('.watermark-preview')
-                .forEach(el => el.remove());
-                }
-            """, edited_html)
-
         pdf_bytes = page.pdf(
             format="A4",
             print_background=True,
