@@ -1670,11 +1670,17 @@ def download_resume():
 
         # 🔥 यहाँ fallback नहीं चाहिए
         page.set_content(edited_html, wait_until="domcontentloaded")
+        page.add_style_tag(url=f"https://{request.host}/static/template3.css")
         page.wait_for_timeout(500)
         page.add_style_tag(content="""
             .watermark-preview {
                 display: none !important;
             }
+            .remove-btn,
+.x-btn,
+button {
+display:none !important;
+}
         """)
         pdf_bytes = page.pdf(
             format="A4",
