@@ -1671,8 +1671,10 @@ def download_resume():
         # 🔥 यहाँ fallback नहीं चाहिए
         page.goto(
             f"http://{request.host}{template_path}",
-            wait_until="domcontentloaded"
+            wait_until="domcontentloaded",
+            timeout=60000
         )
+        page.wait_for_timeout(2000)
         page.add_style_tag(content="""
             .watermark-preview {
                 display: none !important;
