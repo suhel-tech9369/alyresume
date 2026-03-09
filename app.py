@@ -1670,6 +1670,7 @@ def download_resume():
 
         # 🔥 यहाँ fallback नहीं चाहिए
         page.goto(f"https://{request.host}{template_path}", wait_until="domcontentloaded")
+        page.wait_for_timeout(1500)
         page.evaluate("""
         (htmlContent) => {
             const container = document.querySelector(".container");
