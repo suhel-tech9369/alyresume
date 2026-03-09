@@ -1669,12 +1669,20 @@ def download_resume():
             return "NO edited content found", 400
 
         # 🔥 यहाँ fallback नहीं चाहिए
-        page.set_content(edited_html, wait_until="domcontentloaded")
+        page.goto(f"https://{request.host}{template_path}", wait_until="domcontentloaded")
+        page.evaluate("""
+        (htmlContent) => {
+            const container = document.querySelector(".container");
+            if(container){
+                container.outerHTML = htmlContent;
+            }
+
+            document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
+        }
+        """, edited_html)
         template_name = template_path.split("-")[0].replace("/", "")
 
         page.add_style_tag(path=f"static/{template_name}.css")
-
-        page.wait_for_timeout(500)
         page.add_style_tag(content="""
             .watermark-preview {
                 display: none !important;
