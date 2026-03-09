@@ -1671,7 +1671,7 @@ def download_resume():
         # 🔥 यहाँ fallback नहीं चाहिए
         page.goto(
             f"http://{request.host}{template_path}",
-            wait_until="networkidle"
+            wait_until="domcontentloaded"
         )
         page.add_style_tag(content="""
             .watermark-preview {
