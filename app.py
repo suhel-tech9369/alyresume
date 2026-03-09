@@ -323,6 +323,7 @@ def api_chat():
         data["experience_type"] = user_message.lower()
 
         if "exp" in data["experience_type"]:
+            data["companies"] = []
             session["step"] = "total_exp"
             q = "How many years of total experience do you have? (or type: skip)"
             return jsonify({"reply": ask_in_language(data["language"], q)})
