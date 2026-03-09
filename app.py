@@ -1670,7 +1670,10 @@ def download_resume():
 
         # 🔥 यहाँ fallback नहीं चाहिए
         page.set_content(edited_html, wait_until="domcontentloaded")
-        page.add_style_tag(url=f"https://{request.host}/static/template3.css")
+        template_name = template_path.split("-")[0].replace("/", "")
+
+        page.add_style_tag(path=f"static/{template_name}.css")
+
         page.wait_for_timeout(500)
         page.add_style_tag(content="""
             .watermark-preview {
