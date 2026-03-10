@@ -1638,10 +1638,7 @@ def admin_dashboard():
 def admin_logout():
     session.pop("admin_logged_in", None)
     return redirect("/admin")
-
-
 @limiter.limit("5 per minute")
-
 @app.route("/download-resume", methods=["POST"])
 def download_resume():
     if not session.get("paid"):
@@ -1669,7 +1666,7 @@ def download_resume():
             context.add_cookies([{
                 "name": "session",
                 "value": session_cookie,
-                "domain": "127.0.0.1",
+                "domain": "127.0.0.1",   # ✅ localhost domain
                 "path": "/"
             }])
 
@@ -1680,6 +1677,7 @@ def download_resume():
         if not edited_html:
             return "NO edited content found", 400
 
+        # ✅ KEY FIX: localhost pe jaao, external URL pe nahi
         port = os.environ.get('PORT', 10000)
         page.goto(
             f"http://127.0.0.1:{port}{template_path}",
@@ -1687,26 +1685,13 @@ def download_resume():
         )
         page.wait_for_timeout(1500)
 
-        # Header + Container inject
         page.evaluate("""
         (htmlContent) => {
-            const temp = document.createElement("div");
-            temp.innerHTML = htmlContent;
-
-            const newHeader = temp.querySelector(".top-header");
-            const newContainer = temp.querySelector(".container");
-
-            const oldHeader = document.querySelector(".top-header");
-            const oldContainer = document.querySelector(".container");
-
-            if(newHeader && oldHeader) oldHeader.outerHTML = newHeader.outerHTML;
-            if(newContainer && oldContainer) oldContainer.outerHTML = newContainer.outerHTML;
-
+            const container = document.querySelector(".container");
+            if(container){ container.outerHTML = htmlContent; }
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
-
-        page.wait_for_timeout(500)
 
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
@@ -1731,6 +1716,7 @@ def download_resume():
         download_name="Resume.pdf",
         mimetype="application/pdf"
     )
+
 @app.route("/save-edited-resume", methods=["POST"])
 def save_edited_resume():
 
@@ -1759,21 +1745,20 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route("/upload-photo", methods=["POST"])
 def upload_photo():
     file = request.files.get("photo")
+
     if not file:
         return jsonify({"status": "error"})
 
-    import base64
+    filepath = os.path.join("static/uploads", "profile.jpg")
+    file.save(filepath)
 
-    img_base64 = base64.b64encode(file.read()).decode("utf-8")
-    img_data_url = f"data:image/jpeg;base64,{img_base64}"
-
-    session["photo_url"] = img_data_url
-    session.modified = True
+    session["photo_url"] = "/static/uploads/profile.jpg"
 
     return jsonify({
         "status": "success",
-        "url": img_data_url
+        "url": "/static/uploads/profile.jpg"
     })
+
 
 
 @app.route("/terms")
