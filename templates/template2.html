@@ -50,6 +50,12 @@ href="{{ url_for('static', filename='template2.css') }}">
 
 <!-- ================= HEADER ================= -->
 <div class="top-header">
+{% if photo %}
+  <div class="photo">
+      <img id="profileImg"
+           src="{{ url_for('static', filename='uploads/' + photo) }}">
+  </div>
+  {% endif %}
 
   <div class="name-area">
     <h1 contenteditable="true">
