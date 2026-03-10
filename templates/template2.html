@@ -50,8 +50,8 @@ href="{{ url_for('static', filename='template2.css') }}">
 
 <!-- ================= HEADER ================= -->
 <div class="top-header">
-<div class="photo">
-    <img id="profileImg" style="display:none;">
+<div class="photo" style="display:none;" id="photoBox">
+    <img id="profileImg" >
 </div>
 
   <div class="name-area">
@@ -295,6 +295,7 @@ function loadPhoto(event){
       } else {
 
         document.getElementById("profileImg").src = data.url;
+		document.getElementById("photoBox").style.display = "block";
 
       }
 
