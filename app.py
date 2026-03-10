@@ -1634,11 +1634,8 @@ def admin_logout():
 
 @app.route("/download-resume", methods=["POST"])
 def download_resume():
-    # 🔒 Payment check
     if not session.get("paid"):
-        return jsonify({
-            "error": "Payment required"
-        }), 403
+        return jsonify({"error": "Payment required"}), 403
 
     data = request.get_json()
     template_path = data.get("template")
@@ -1646,17 +1643,23 @@ def download_resume():
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage", "--single-process", "--disable-gpu"]
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--single-process",
+                "--no-zygote"
+            ]
         )
         context = browser.new_context(viewport={"width": 1200, "height": 1600})
 
         session_cookie = request.cookies.get("session")
-
         if session_cookie:
             context.add_cookies([{
                 "name": "session",
                 "value": session_cookie,
-                "domain": request.host.split(":")[0],
+                "domain": "127.0.0.1",   # ✅ localhost domain
                 "path": "/"
             }])
 
@@ -1664,52 +1667,41 @@ def download_resume():
         page.set_default_timeout(60000)
 
         edited_html = data.get("html")
-
         if not edited_html:
             return "NO edited content found", 400
 
-        # 🔥 यहाँ fallback नहीं चाहिए
-        page.goto(f"https://{request.host}{template_path}", wait_until="domcontentloaded")
+        # ✅ KEY FIX: localhost pe jaao, external URL pe nahi
+        port = os.environ.get('PORT', 10000)
+        page.goto(
+            f"http://127.0.0.1:{port}{template_path}",
+            wait_until="domcontentloaded"
+        )
         page.wait_for_timeout(1500)
+
         page.evaluate("""
         (htmlContent) => {
             const container = document.querySelector(".container");
-            if(container){
-                container.outerHTML = htmlContent;
-            }
-
+            if(container){ container.outerHTML = htmlContent; }
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
-        template_name = template_path.split("-")[0].replace("/", "")
 
+        template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
         page.add_style_tag(content="""
-            .watermark-preview {
-                display: none !important;
-            }
-            .remove-btn,
-.x-btn,
-button {
-display:none !important;
-}
+            .watermark-preview { display: none !important; }
+            .remove-btn, .x-btn, button { display: none !important; }
         """)
+
         pdf_bytes = page.pdf(
             format="A4",
             print_background=True,
             scale=1.12,
-            margin={
-                "top": "0mm",
-                "bottom": "0mm",
-                "left": "0mm",
-                "right": "0mm"
-            }
+            margin={"top":"0mm","bottom":"0mm","left":"0mm","right":"0mm"}
         )
         page.close()
         context.close()
         browser.close()
-
-
 
     return send_file(
         io.BytesIO(pdf_bytes),
