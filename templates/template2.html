@@ -630,4 +630,43 @@ z-index:999;
   </div>
 </div>
 </body>
+<script>
+
+// right click block
+document.addEventListener("contextmenu", function(e){
+    e.preventDefault();
+});
+
+// inspect block
+document.onkeydown = function(e) {
+
+if(e.keyCode == 123){
+return false;
+}
+
+if(e.ctrlKey && e.shiftKey && e.keyCode == 73){
+return false;
+}
+
+if(e.ctrlKey && e.shiftKey && e.keyCode == 74){
+return false;
+}
+
+if(e.ctrlKey && e.keyCode == 85){
+return false;
+}
+
+}
+
+// screenshot key block
+document.addEventListener("keyup", function(e){
+
+if(e.key === "PrintScreen"){
+navigator.clipboard.writeText("");
+alert("Screenshot disabled");
+}
+
+});
+
+</script>
 </html>
