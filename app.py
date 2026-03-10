@@ -1699,6 +1699,7 @@ def download_resume():
             .watermark-preview { display: none !important; }
             .remove-btn, .x-btn, button { display: none !important; }
         """)
+        page.wait_for_timeout(1000)
 
         pdf_bytes = page.pdf(
             format="A4",
