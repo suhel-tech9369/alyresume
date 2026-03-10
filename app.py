@@ -1669,7 +1669,7 @@ def download_resume():
             context.add_cookies([{
                 "name": "session",
                 "value": session_cookie,
-                "domain": "127.0.0.1",   # ✅ localhost domain
+                "domain": "127.0.0.1",
                 "path": "/"
             }])
 
@@ -1680,7 +1680,6 @@ def download_resume():
         if not edited_html:
             return "NO edited content found", 400
 
-        # ✅ KEY FIX: localhost pe jaao, external URL pe nahi
         port = os.environ.get('PORT', 10000)
         page.goto(
             f"http://127.0.0.1:{port}{template_path}",
@@ -1688,23 +1687,26 @@ def download_resume():
         )
         page.wait_for_timeout(1500)
 
+        # Header + Container inject
         page.evaluate("""
         (htmlContent) => {
-            const container = document.querySelector(".container");
-            if(container){ container.outerHTML = htmlContent; }
+            const temp = document.createElement("div");
+            temp.innerHTML = htmlContent;
+
+            const newHeader = temp.querySelector(".top-header");
+            const newContainer = temp.querySelector(".container");
+
+            const oldHeader = document.querySelector(".top-header");
+            const oldContainer = document.querySelector(".container");
+
+            if(newHeader && oldHeader) oldHeader.outerHTML = newHeader.outerHTML;
+            if(newContainer && oldContainer) oldContainer.outerHTML = newContainer.outerHTML;
+
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
-        page.wait_for_timeout(500)
 
-        photo_url = session.get("photo_url", "")
-        if photo_url:
-            page.evaluate("""
-                    (src) => {
-                        const img = document.getElementById("profileImg");
-                        if(img) img.src = src;
-                    }
-                    """, photo_url)
+        page.wait_for_timeout(500)
 
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
@@ -1729,7 +1731,6 @@ def download_resume():
         download_name="Resume.pdf",
         mimetype="application/pdf"
     )
-
 @app.route("/save-edited-resume", methods=["POST"])
 def save_edited_resume():
 
