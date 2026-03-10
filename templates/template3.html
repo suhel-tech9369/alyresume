@@ -361,8 +361,7 @@ function closeCover(){
 function downloadAllPDF(){
 document.getElementById("downloadLoader").style.display = "flex";
 
- let header = document.querySelector(".top-header").cloneNode(true);
-let container = document.querySelector(".container").cloneNode(true);
+ let container = document.querySelector(".container").cloneNode(true);
 
 // 🔥 watermark remove only for download
 let wm = container.querySelector(".watermark-preview");
@@ -370,7 +369,7 @@ if(wm){
   wm.remove();
 }
 
-let editedHTML = header.outerHTML + container.outerHTML;
+let editedHTML = container.outerHTML;
   // 🔥 यह लाइन जरूरी है
   let currentTemplate = window.location.pathname;
 
