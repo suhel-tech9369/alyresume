@@ -15,6 +15,8 @@ from reportlab.lib.styles import getSampleStyleSheet
 from playwright.sync_api import sync_playwright
 from flask import send_file
 import io
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 # ===============================
 # Load API Key
 # ===============================
@@ -32,6 +34,11 @@ razorpay_client = razorpay.Client(
 # Flask App
 # ===============================
 app = Flask(__name__)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 conn = sqlite3.connect("payments.db", check_same_thread=False)
 c = conn.cursor()
@@ -1631,7 +1638,7 @@ def admin_dashboard():
 def admin_logout():
     session.pop("admin_logged_in", None)
     return redirect("/admin")
-
+@limiter.limit("5 per minute")
 @app.route("/download-resume", methods=["POST"])
 def download_resume():
     if not session.get("paid"):
