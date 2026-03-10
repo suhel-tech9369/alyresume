@@ -50,9 +50,12 @@ href="{{ url_for('static', filename='template1.css') }}">
 
 <!-- ================= HEADER ================= -->
 <div class="top-header">
-		<div class="photo" style="display:none;" id="photoBox">
-    <img id="profileImg" >
-</div>
+		{% if photo %}
+  <div class="photo">
+      <img id="profileImg"
+           src="{{ url_for('static', filename='uploads/' + photo) }}">
+  </div>
+  {% endif %}
 
   <div class="name-area">
     <h1 contenteditable="true">
@@ -259,7 +262,9 @@ function addSidebarSection(){
 
 /* PHOTO LOAD */
 function loadPhoto(event){
+
   let file = event.target.files[0];
+
   let formData = new FormData();
   formData.append("photo", file);
 
@@ -269,14 +274,36 @@ function loadPhoto(event){
   })
   .then(res => res.json())
   .then(data => {
+
     if(data.status === "success"){
-      let photoBox = document.getElementById("photoBox");
-      let profileImg = document.getElementById("profileImg");
-      photoBox.style.display = "block";
-      photoBox.style.visibility = "visible";
-      profileImg.src = data.url;
+
+      // अगर photo div exist नहीं करता तो बनाओ
+      let header = document.querySelector(".top-header");
+      let existingPhoto = document.querySelector(".photo");
+
+      if(!existingPhoto){
+
+        let photoDiv = document.createElement("div");
+        photoDiv.className = "photo";
+
+        let img = document.createElement("img");
+        img.id = "profileImg";
+        img.src = data.url;
+
+        photoDiv.appendChild(img);
+
+        header.insertBefore(photoDiv, header.firstChild);
+
+      } else {
+
+        document.getElementById("profileImg").src = data.url;
+
+      }
+
     }
+
   });
+
 }
 
 
@@ -329,151 +356,197 @@ function closeCover(){
 
 /* DOWNLOAD BOTH */
 function downloadAllPDF(){
-  document.getElementById("downloadLoader").style.display = "flex";
+document.getElementById("downloadLoader").style.display = "flex";
 
-  let header = document.querySelector(".top-header").cloneNode(true);
-  let container = document.querySelector(".container").cloneNode(true);
+ let header = document.querySelector(".top-header").cloneNode(true);
+let container = document.querySelector(".container").cloneNode(true);
 
-  let wm = container.querySelector(".watermark-preview");
-  if(wm) wm.remove();
+// 🔥 watermark remove only for download
+let wm = container.querySelector(".watermark-preview");
+if(wm){
+  wm.remove();
+}
 
-  let editedHTML = header.outerHTML + container.outerHTML;
+let editedHTML = header.outerHTML + container.outerHTML;
+  // 🔥 यह लाइन जरूरी है
   let currentTemplate = window.location.pathname;
 
   fetch("/save-edited-resume", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      html: editedHTML,
-      template: currentTemplate
-    })
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+          html: editedHTML,
+          template: currentTemplate   // 🔥 यही असली चीज है
+      })
   })
   .then(() => {
-    let includeCover = coverLetterText !== "";
 
-    fetch("/create-order", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({cover_letter: includeCover})
-    })
-    .then(res => res.json())
-    .then(data => {
-      if(data.skip_payment){
-        fetch("/download-resume", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({
-            template: currentTemplate,
-            html: editedHTML
-          })
+      let includeCover = coverLetterText !== "";
+
+      fetch("/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          cover_letter: includeCover
         })
-        .then(res => res.blob())
-        .then(blob => {
-          let url = window.URL.createObjectURL(blob);
-          let a = document.createElement("a");
-          a.href = url;
-          a.download = "Resume.pdf";
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.getElementById("downloadLoader").style.display = "none";
-        });
+      })
+      .then(res => res.json())
+      .then(data => {
+	  if(data.skip_payment){
 
-        if(includeCover){
-          fetch("/download-cover-letter", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({text: coverLetterText})
-          })
-          .then(res => res.blob())
-          .then(blob => {
+    fetch("/download-resume", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          template: currentTemplate,
+		  html:editedHTML
+        })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "Resume.pdf";
+        a.click();
+        window.URL.revokeObjectURL(url);
+		document.getElementById("downloadLoader").style.display = "none";
+
+    });
+
+    if(includeCover){
+        fetch("/download-cover-letter", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ text: coverLetterText })
+        })
+        .then(res=>res.blob())
+        .then(blob=>{
             let url = window.URL.createObjectURL(blob);
             let a = document.createElement("a");
             a.href = url;
             a.download = "CoverLetter.pdf";
             a.click();
             window.URL.revokeObjectURL(url);
-          });
-        }
-        return;
-      }
+        });
+    }
 
-      var options = {
-        key: data.key,
-        amount: data.amount,
-        currency: "INR",
-        name: "AlyResume",
-        description: includeCover ? "Resume + Cover Letter" : "Resume Download",
-        order_id: data.order_id,
-        modal: {
-          ondismiss: function(){
-            document.getElementById("downloadLoader").style.display = "none";
-          }
-        },
-        handler: function(response){
-          fetch("/verify-payment", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-              razorpay_order_id: data.order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            })
-          })
-          .then(res => res.json())
-          .then(data => {
-            if(data.status === "success"){
-              fetch("/download-resume", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                  template: currentTemplate,
-                  html: editedHTML
-                })
+    return; 
+}
+
+        var options = {
+          key: data.key,
+          amount: data.amount,
+          currency: "INR",
+          name: "M Suhel",
+          description: includeCover ?
+              "Resume + Cover Letter" :
+              "Resume Download",
+          order_id: data.order_id,
+		  modal: {
+    ondismiss: function(){
+        document.getElementById("downloadLoader").style.display = "none";
+    }
+},
+
+          handler: function (response){
+
+            fetch("/verify-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                razorpay_order_id: data.order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
               })
-              .then(res => res.blob())
-              .then(blob => {
-                let url = window.URL.createObjectURL(blob);
-                let a = document.createElement("a");
-                a.href = url;
-                a.download = "Resume.pdf";
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.getElementById("downloadLoader").style.display = "none";
-              });
+            })
+            .then(res => res.json())
+            .then(data => {
 
-              if(includeCover){
-                fetch("/download-cover-letter", {
+              if(data.status === "success"){
+
+                // 🔥 यहाँ भी template भेजना है
+                fetch("/download-resume", {
                   method: "POST",
-                  headers: {"Content-Type": "application/json"},
-                  body: JSON.stringify({text: coverLetterText})
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    template: currentTemplate,
+					html:editedHTML
+                  })
                 })
                 .then(res => res.blob())
                 .then(blob => {
-                  let url = window.URL.createObjectURL(blob);
-                  let a = document.createElement("a");
-                  a.href = url;
-                  a.download = "CoverLetter.pdf";
-                  a.click();
-                  window.URL.revokeObjectURL(url);
-                });
-              }
-            } else {
-              alert("Payment verification failed ❌");
-            }
-          });
-        },
-        theme: {color: "#3b82f6"}
-      };
 
-      var rzp1 = new Razorpay(options);
-      rzp1.open();
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById("downloadLoader").style.display = "none";
-      alert("Something went wrong. Please try again.");
-    });
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement("a");
+                    a.href = url;
+                    a.download = "Resume.pdf";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+					document.getElementById("downloadLoader").style.display = "none";
+
+                });
+			// 🔥 Cover Letter Download
+				if(includeCover){
+
+				  fetch("/download-cover-letter", {
+					method: "POST",
+					headers: {
+					  "Content-Type": "application/json"
+					},
+					body: JSON.stringify({
+					  text: coverLetterText
+					})
+				  })
+				  .then(res => res.blob())
+				  .then(blob => {
+
+					  let url = window.URL.createObjectURL(blob);
+					  let a = document.createElement("a");
+					  a.href = url;
+					  a.download = "CoverLetter.pdf";
+					  a.click();
+					  window.URL.revokeObjectURL(url);
+
+				  });
+
+				}
+
+              } else {
+                alert("Payment verification failed ❌");
+              }
+
+            });
+
+          },
+          theme: {
+            color: "#3b82f6"
+          }
+        };
+
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+		
+
+      })
+.catch(err => {
+    console.error(err);
+    document.getElementById("downloadLoader").style.display = "none";
+    alert("Something went wrong. Please try again.");
+	});
   });
+
 }
 </script>
 <script>
