@@ -1687,22 +1687,28 @@ def download_resume():
 
         page.evaluate("""
         (htmlContent) => {
-            const container = document.querySelector(".container");
-            if(container){ container.outerHTML = htmlContent; }
+
+            const temp = document.createElement("div");
+            temp.innerHTML = htmlContent;
+
+            const newHeader = temp.querySelector(".top-header");
+            const newContainer = temp.querySelector(".container");
+
+            const oldHeader = document.querySelector(".top-header");
+            const oldContainer = document.querySelector(".container");
+
+            if(newHeader && oldHeader){
+                oldHeader.outerHTML = newHeader.outerHTML;
+            }
+
+            if(newContainer && oldContainer){
+                oldContainer.outerHTML = newContainer.outerHTML;
+            }
+
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
-        photo_url = session.get("photo_url")
 
-        if photo_url:
-            page.evaluate("""
-            (src) => {
-                let img = document.getElementById("profileImg");
-                if(img){
-                    img.src = src;
-                }
-            }
-            """, photo_url)
 
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
