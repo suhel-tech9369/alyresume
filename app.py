@@ -1674,7 +1674,6 @@ def download_resume():
         page.set_default_timeout(60000)
 
         edited_html = data.get("html")
-        print(edited_html)
         if not edited_html:
             return "NO edited content found", 400
 
@@ -1682,9 +1681,9 @@ def download_resume():
         port = os.environ.get('PORT', 10000)
         page.goto(
             f"http://127.0.0.1:{port}{template_path}",
-            wait_until="networkidle"
+            wait_until="domcontentloaded"
         )
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(1500)
 
         page.evaluate("""
         (htmlContent) => {
@@ -1709,8 +1708,8 @@ def download_resume():
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
-        page.wait_for_selector("#profileImg", timeout=5000)
-        page.wait_for_timeout(3000)
+
+
 
 
         template_name = template_path.split("-")[0].replace("/", "")
@@ -1763,23 +1762,31 @@ from flask import request, jsonify
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 @app.route("/upload-photo", methods=["POST"])
 def upload_photo():
     file = request.files.get("photo")
-
     if not file:
         return jsonify({"status": "error"})
 
-    filepath = os.path.join("static/uploads", "profile.jpg")
-    file.save(filepath)
+    import base64
+    file_bytes = file.read()
 
-    session["photo_url"] = "/static/uploads/profile.jpg"
+    # File bhi save karo
+    filepath = os.path.join("static/uploads", "profile.jpg")
+    with open(filepath, "wb") as f:
+        f.write(file_bytes)
+
+    # Base64 bhi session mein rakho
+    img_base64 = base64.b64encode(file_bytes).decode("utf-8")
+    img_data_url = f"data:image/jpeg;base64,{img_base64}"
+    session["photo_url"] = img_data_url
+    session.modified = True
 
     return jsonify({
         "status": "success",
-        "url": "/static/uploads/profile.jpg"
+        "url": img_data_url  # base64 return karo
     })
-
 
 
 @app.route("/terms")
