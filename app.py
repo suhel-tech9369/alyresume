@@ -1683,7 +1683,7 @@ def download_resume():
             f"http://127.0.0.1:{port}{template_path}",
             wait_until="domcontentloaded"
         )
-        page.wait_for_timeout(1500)
+        page.wait_for_timeout(3000)
 
         page.evaluate("""
         (htmlContent) => {
@@ -1716,6 +1716,7 @@ def download_resume():
             .watermark-preview { display: none !important; }
             .remove-btn, .x-btn, button { display: none !important; }
         """)
+        page.wait_for_timeout(1000)
 
         pdf_bytes = page.pdf(
             format="A4",
