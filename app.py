@@ -1674,6 +1674,7 @@ def download_resume():
         page.set_default_timeout(60000)
 
         edited_html = data.get("html")
+        print(edited_html)
         if not edited_html:
             return "NO edited content found", 400
 
