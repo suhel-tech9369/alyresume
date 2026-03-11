@@ -1745,20 +1745,26 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route("/upload-photo", methods=["POST"])
 def upload_photo():
     file = request.files.get("photo")
-
     if not file:
         return jsonify({"status": "error"})
 
+    import base64
+
+    # ✅ File bhi save karo
     filepath = os.path.join("static/uploads", "profile.jpg")
     file.save(filepath)
 
-    session["photo_url"] = "/static/uploads/profile.jpg"
+    # ✅ Base64 bhi session mein rakho (PDF ke liye)
+    file.seek(0)
+    img_base64 = base64.b64encode(file.read()).decode("utf-8")
+    img_data_url = f"data:image/jpeg;base64,{img_base64}"
+    session["photo_url"] = img_data_url
+    session.modified = True
 
     return jsonify({
         "status": "success",
-        "url": "/static/uploads/profile.jpg"
+        "url": img_data_url  # ✅ base64 return karo JS ke liye
     })
-
 
 
 @app.route("/terms")
