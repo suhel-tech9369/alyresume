@@ -1674,6 +1674,7 @@ def download_resume():
         page.set_default_timeout(60000)
 
         edited_html = data.get("html")
+        print(edited_html)
         if not edited_html:
             return "NO edited content found", 400
 
@@ -1708,6 +1709,7 @@ def download_resume():
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
+        page.wait_for_timeout(3000)
 
 
         template_name = template_path.split("-")[0].replace("/", "")
