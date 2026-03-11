@@ -1674,7 +1674,6 @@ def download_resume():
         page.set_default_timeout(60000)
 
         edited_html = data.get("html")
-        print(edited_html)
         if not edited_html:
             return "NO edited content found", 400
 
@@ -1682,7 +1681,7 @@ def download_resume():
         port = os.environ.get('PORT', 10000)
         page.goto(
             f"http://127.0.0.1:{port}{template_path}",
-            wait_until="domcontentloaded"
+            wait_until="networkidle"
         )
         page.wait_for_timeout(3000)
 
@@ -1709,6 +1708,7 @@ def download_resume():
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
+        page.wait_for_selector("#profileImg", timeout=5000)
         page.wait_for_timeout(3000)
 
 
