@@ -1785,7 +1785,8 @@ def upload_photo():
 
     return jsonify({
         "status": "success",
-        "url": img_data_url  # base64 return karo
+        "url": img_data_url,  # base64 return karo
+        "file_url": "/static/uploads/profile.jpg"
     })
 
 
