@@ -1089,6 +1089,7 @@ def template_preview():
         projects=sections.get("9", {}),
 
         job_role=data.get("job_role"),
+        photo=session.get("photo_filename", None),
         extra_sections={
             k: v for k, v in sections.items() if int(k) > 9
         }
@@ -1416,7 +1417,7 @@ def create_order():
         print("DATA RECEIVED:", data)
 
         include_cover = data.get("cover_letter", False)
-        amount = 100 if include_cover else 100
+        amount = 5900 if include_cover else 4900
 
         print("AMOUNT:", amount)
 
@@ -1462,11 +1463,11 @@ def verify_payment():
         amount = payment["amount"]
         download_token = str(uuid.uuid4())
         # ✅ Amount validation
-        if amount not in [100, 100]:
+        if amount not in [4900, 5900]:
             return jsonify({"status": "invalid_amount"}), 400
 
         # Detect cover letter purchase
-        include_cover = True if amount == 100 else False
+        include_cover = True if amount == 5900 else False
 
         # 3️⃣ Save payment in database
         conn = sqlite3.connect("payments.db")
@@ -1687,30 +1688,11 @@ def download_resume():
 
         page.evaluate("""
         (htmlContent) => {
-
-            const temp = document.createElement("div");
-            temp.innerHTML = htmlContent;
-
-            const newHeader = temp.querySelector(".top-header");
-            const newContainer = temp.querySelector(".container");
-
-            const oldHeader = document.querySelector(".top-header");
-            const oldContainer = document.querySelector(".container");
-
-            if(newHeader && oldHeader){
-                oldHeader.outerHTML = newHeader.outerHTML;
-            }
-
-            if(newContainer && oldContainer){
-                oldContainer.outerHTML = newContainer.outerHTML;
-            }
-
+            const container = document.querySelector(".container");
+            if(container){ container.outerHTML = htmlContent; }
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
-
-
-
 
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
@@ -1718,7 +1700,6 @@ def download_resume():
             .watermark-preview { display: none !important; }
             .remove-btn, .x-btn, button { display: none !important; }
         """)
-        page.wait_for_timeout(1000)
 
         pdf_bytes = page.pdf(
             format="A4",
@@ -1762,32 +1743,24 @@ from flask import request, jsonify
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-
 @app.route("/upload-photo", methods=["POST"])
 def upload_photo():
     file = request.files.get("photo")
+
     if not file:
         return jsonify({"status": "error"})
 
-    import base64
-    file_bytes = file.read()
-
-    # File bhi save karo
     filepath = os.path.join("static/uploads", "profile.jpg")
-    with open(filepath, "wb") as f:
-        f.write(file_bytes)
+    file.save(filepath)
 
-    # Base64 bhi session mein rakho
-    img_base64 = base64.b64encode(file_bytes).decode("utf-8")
-    img_data_url = f"data:image/jpeg;base64,{img_base64}"
-    session["photo_url"] = img_data_url
-    session.modified = True
+    session["photo_url"] = "/static/uploads/profile.jpg"
+    session["photo_filename"] = "profile.jpg"
 
     return jsonify({
         "status": "success",
-        "url": img_data_url,  # base64 return karo
-        "file_url": "/static/uploads/profile.jpg"
+        "url": "/static/uploads/profile.jpg"
     })
+
 
 
 @app.route("/terms")
