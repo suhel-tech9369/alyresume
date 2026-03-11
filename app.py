@@ -1693,6 +1693,14 @@ def download_resume():
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
+        photo_url = session.get("photo_url", "")
+        if photo_url:
+            page.evaluate("""
+                    (src) => {
+                        const img = document.getElementById("profileImg");
+                        if(img) img.src = src;
+                    }
+                    """, photo_url)
 
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
@@ -1743,25 +1751,26 @@ from flask import request, jsonify
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 @app.route("/upload-photo", methods=["POST"])
 def upload_photo():
     file = request.files.get("photo")
-
     if not file:
         return jsonify({"status": "error"})
 
-    filepath = os.path.join("static/uploads", "profile.jpg")
-    file.save(filepath)
+    import base64
+    file_bytes = file.read()
+    img_base64 = base64.b64encode(file_bytes).decode("utf-8")
+    img_data_url = f"data:image/jpeg;base64,{img_base64}"
 
-    session["photo_url"] = "/static/uploads/profile.jpg"
+    session["photo_url"] = img_data_url
     session["photo_filename"] = "profile.jpg"
+    session.modified = True
 
     return jsonify({
         "status": "success",
-        "url": "/static/uploads/profile.jpg"
+        "url": img_data_url
     })
-
-
 
 @app.route("/terms")
 def terms():
