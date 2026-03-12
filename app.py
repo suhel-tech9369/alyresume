@@ -1692,6 +1692,16 @@ def download_resume():
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, edited_html)
+        page.wait_for_selector("#profileImg")
+
+        page.wait_for_function("""
+        () => {
+            const img = document.getElementById("profileImg");
+            return img && img.complete && img.naturalWidth > 0;
+        }
+        """)
+
+        page.wait_for_timeout(1000)
 
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
