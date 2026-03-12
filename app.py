@@ -1698,10 +1698,11 @@ def download_resume():
         (data) => {
             const container = document.querySelector(".container");
             if(container) container.outerHTML = data.html;
+            const oldHeader = document.querySelector(".top-header");
+            if(oldHeader) oldHeader.remove();
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
         }
         """, {"html": edited_html, "photo": photo_base64})
-
         page.wait_for_timeout(500)
 
         if photo_base64:
