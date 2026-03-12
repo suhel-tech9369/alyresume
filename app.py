@@ -1,4 +1,5 @@
 import os
+import base64
 import re
 import json
 import io
@@ -1676,6 +1677,12 @@ def download_resume():
         edited_html = data.get("html")
         if not edited_html:
             return "NO edited content found", 400
+        photo_path = "static/uploads/profile.jpg"
+
+        photo_base64 = ""
+        if os.path.exists(photo_path):
+            with open(photo_path, "rb") as img_file:
+                photo_base64 = base64.b64encode(img_file.read()).decode("utf-8")
 
         # ✅ KEY FIX: localhost pe jaao, external URL pe nahi
         port = os.environ.get('PORT', 10000)
@@ -1686,23 +1693,24 @@ def download_resume():
         page.wait_for_timeout(1500)
 
         page.evaluate("""
-        (htmlContent) => {
+        (htmlContent, photoBase64) => {
+
             const container = document.querySelector(".container");
-            if(container){ container.outerHTML = htmlContent; }
-            document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
-        }
-        """, edited_html)
-        page.wait_for_selector("#profileImg")
+            if(container){
+                container.outerHTML = htmlContent;
+            }
 
-        page.wait_for_function("""
-        () => {
             const img = document.getElementById("profileImg");
-            return img && img.complete && img.naturalWidth > 0;
+
+            if(img && photoBase64){
+                img.src = "data:image/jpeg;base64," + photoBase64;
+            }
+
+            document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
+
         }
-        """)
-
-        page.wait_for_timeout(1000)
-
+        """, edited_html, photo_base64)
+        page.wait_for_timeout(1500)
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
         page.add_style_tag(content="""
@@ -1748,7 +1756,6 @@ def save_edited_resume():
 
 from flask import request, jsonify, url_for, session
 from PIL import Image
-import os
 
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
