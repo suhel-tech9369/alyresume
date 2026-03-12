@@ -1694,29 +1694,22 @@ def download_resume():
 
         page.evaluate("""
         (data) => {
-
-            const htmlContent = data.html;
-            const photoBase64 = data.photo;
-
             const container = document.querySelector(".container");
-
-            if(container){
-                container.outerHTML = htmlContent;
-            }
-
-            const img = document.getElementById("profileImg");
-
-            if(img && photoBase64){
-                img.src = "data:image/jpeg;base64," + photoBase64;
-            }
-
+            if(container) container.outerHTML = data.html;
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
-
         }
-        """, {
-            "html": edited_html,
-            "photo": photo_base64
-        })
+        """, {"html": edited_html, "photo": photo_base64})
+
+        page.wait_for_timeout(500)
+
+        if photo_base64:
+            page.evaluate("""
+            (p) => {
+                const img = document.getElementById("profileImg");
+                if(img) img.src = "data:image/jpeg;base64," + p;
+            }
+            """, photo_base64)
+
         page.wait_for_timeout(1500)
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
@@ -1752,9 +1745,7 @@ def save_edited_resume():
     resume_data = session.get("resume_data", {})
 
     # Always overwrite with latest snapshot
-    resume_data["edited_html"] = html_content
     resume_data["template_path"] = template_path
-
     session["resume_data"] = resume_data
     session.modified = True
 
