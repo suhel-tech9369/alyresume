@@ -1683,6 +1683,8 @@ def download_resume():
         if os.path.exists(photo_path):
             with open(photo_path, "rb") as img_file:
                 photo_base64 = base64.b64encode(img_file.read()).decode("utf-8")
+                print("PHOTO BASE64 LENGTH:", len(photo_base64))
+
 
         # ✅ KEY FIX: localhost pe jaao, external URL pe nahi
         port = os.environ.get('PORT', 10000)

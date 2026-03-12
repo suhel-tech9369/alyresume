@@ -50,9 +50,13 @@ href="{{ url_for('static', filename='template1.css') }}">
 
 <!-- ================= HEADER ================= -->
 <div class="top-header">
-		<div class="photo" id="photoContainer" style="display:none;">
-    <img id="profileImg">
-</div>
+		{% if photo %}
+  <div class="photo">
+      <img id="profileImg"
+           src="{{ url_for('static', filename='uploads/' + photo) }}">
+  </div>
+  {% endif %}
+
   <div class="name-area">
     <h1 contenteditable="true">
       {{ name.content }}
@@ -285,7 +289,6 @@ function loadPhoto(event){
         let img = document.createElement("img");
         img.id = "profileImg";
         img.src = data.url;
-		photoDiv.style.display = "block";
 
         photoDiv.appendChild(img);
 
@@ -294,7 +297,6 @@ function loadPhoto(event){
       } else {
 
         document.getElementById("profileImg").src = data.url;
-		document.querySelector(".photo").style.display = "block";
 
       }
 
