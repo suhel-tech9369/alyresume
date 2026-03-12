@@ -1416,7 +1416,7 @@ def create_order():
         print("DATA RECEIVED:", data)
 
         include_cover = data.get("cover_letter", False)
-        amount = 5900 if include_cover else 4900
+        amount = 100 if include_cover else 100
 
         print("AMOUNT:", amount)
 
@@ -1462,11 +1462,11 @@ def verify_payment():
         amount = payment["amount"]
         download_token = str(uuid.uuid4())
         # ✅ Amount validation
-        if amount not in [4900, 5900]:
+        if amount not in [100, 100]:
             return jsonify({"status": "invalid_amount"}), 400
 
         # Detect cover letter purchase
-        include_cover = True if amount == 5900 else False
+        include_cover = True if amount == 100 else False
 
         # 3️⃣ Save payment in database
         conn = sqlite3.connect("payments.db")
