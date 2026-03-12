@@ -1707,7 +1707,19 @@ def download_resume():
         if photo_base64:
             page.evaluate("""
             (p) => {
-                const img = document.getElementById("profileImg");
+                let existing = document.getElementById("profileImg");
+                if(!existing){
+                    let header = document.querySelector(".top-header");
+                    if(header){
+                        let div = document.createElement("div");
+                        div.className = "photo";
+                        let img = document.createElement("img");
+                        img.id = "profileImg";
+                        div.appendChild(img);
+                        header.insertBefore(div, header.firstChild);
+                    }
+                }
+                let img = document.getElementById("profileImg");
                 if(img) img.src = "data:image/jpeg;base64," + p;
             }
             """, photo_base64)
