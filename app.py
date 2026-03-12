@@ -1736,30 +1736,51 @@ def save_edited_resume():
     return {"status": "saved"}
 
 
+from flask import request, jsonify, url_for, session
+from PIL import Image
 import os
-from flask import request, jsonify
 
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route("/upload-photo", methods=["POST"])
 def upload_photo():
+
     file = request.files.get("photo")
 
     if not file:
         return jsonify({"status": "error"})
 
-    filepath = os.path.join("static/uploads", "profile.jpg")
+    filepath = os.path.join(UPLOAD_FOLDER, "profile.jpg")
+
+    # save original image
     file.save(filepath)
+
+    # open image using Pillow
+    img = Image.open(filepath)
+
+    # convert to RGB (important for PNG/WEBP uploads)
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+
+    # resize automatically for resume photo
+    max_size = (600, 600)
+    img.thumbnail(max_size)
+
+    # compress image
+    img.save(filepath, format="JPEG", quality=85, optimize=True)
+
     print("photo size:", os.path.getsize(filepath))
 
-    session["photo_url"] = "/static/uploads/profile.jpg"
+    # generate correct static url
+    photo_url = url_for("static", filename="uploads/profile.jpg")
+
+    session["photo_url"] = photo_url
 
     return jsonify({
         "status": "success",
-        "url": "/static/uploads/profile.jpg"
+        "url": photo_url
     })
-
 
 
 @app.route("/terms")
