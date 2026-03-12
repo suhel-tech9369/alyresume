@@ -1751,6 +1751,7 @@ def upload_photo():
 
     filepath = os.path.join("static/uploads", "profile.jpg")
     file.save(filepath)
+    print("photo size:", os.path.getsize(filepath))
 
     session["photo_url"] = "/static/uploads/profile.jpg"
 

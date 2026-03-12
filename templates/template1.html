@@ -262,34 +262,50 @@ function addSidebarSection(){
 
 /* PHOTO LOAD */
 function loadPhoto(event){
+
   let file = event.target.files[0];
-  if(!file) return;
 
-  let reader = new FileReader();
-  reader.onload = function(e){
-    let base64 = e.target.result;
+  let formData = new FormData();
+  formData.append("photo", file);
 
-    // Global mein save karo
-    window.photoBase64 = base64;
+  fetch("/upload-photo", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
 
-    // Template mein dikhao
-    let header = document.querySelector(".top-header");
-    let existingPhoto = document.querySelector(".photo");
+    if(data.status === "success"){
 
-    if(!existingPhoto){
-      let photoDiv = document.createElement("div");
-      photoDiv.className = "photo";
-      let img = document.createElement("img");
-      img.id = "profileImg";
-      img.src = base64;
-      photoDiv.appendChild(img);
-      header.insertBefore(photoDiv, header.firstChild);
-    } else {
-      document.getElementById("profileImg").src = base64;
+      // अगर photo div exist नहीं करता तो बनाओ
+      let header = document.querySelector(".top-header");
+      let existingPhoto = document.querySelector(".photo");
+
+      if(!existingPhoto){
+
+        let photoDiv = document.createElement("div");
+        photoDiv.className = "photo";
+
+        let img = document.createElement("img");
+        img.id = "profileImg";
+        img.src = data.url;
+
+        photoDiv.appendChild(img);
+
+        header.insertBefore(photoDiv, header.firstChild);
+
+      } else {
+
+        document.getElementById("profileImg").src = data.url;
+
+      }
+
     }
-  };
-  reader.readAsDataURL(file);
+
+  });
+
 }
+
 
 
 /* COVER LETTER */
@@ -351,12 +367,6 @@ if(wm){
 }
 
 let editedHTML = container.outerHTML;
-if(window.photoBase64){
-  editedHTML = editedHTML.replace(
-    /src="[^"]*"/,
-    `src="${window.photoBase64}"`
-  );
-}
   // 🔥 यह लाइन जरूरी है
   let currentTemplate = window.location.pathname;
 
