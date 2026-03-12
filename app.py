@@ -1693,9 +1693,13 @@ def download_resume():
         page.wait_for_timeout(1500)
 
         page.evaluate("""
-        (htmlContent, photoBase64) => {
+        (data) => {
+
+            const htmlContent = data.html;
+            const photoBase64 = data.photo;
 
             const container = document.querySelector(".container");
+
             if(container){
                 container.outerHTML = htmlContent;
             }
@@ -1709,7 +1713,10 @@ def download_resume():
             document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
 
         }
-        """, edited_html, photo_base64)
+        """, {
+            "html": edited_html,
+            "photo": photo_base64
+        })
         page.wait_for_timeout(1500)
         template_name = template_path.split("-")[0].replace("/", "")
         page.add_style_tag(path=f"static/{template_name}.css")
