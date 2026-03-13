@@ -15,6 +15,7 @@ from flask import render_template_string
 from reportlab.lib.styles import getSampleStyleSheet
 from playwright.sync_api import sync_playwright
 from flask import send_file
+from flask import send_from_directory
 import io
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -1683,8 +1684,6 @@ def download_resume():
         if os.path.exists(photo_path):
             with open(photo_path, "rb") as img_file:
                 photo_base64 = base64.b64encode(img_file.read()).decode("utf-8")
-                print("PHOTO BASE64 LENGTH:", len(photo_base64))
-
 
         # ✅ KEY FIX: localhost pe jaao, external URL pe nahi
         port = os.environ.get('PORT', 10000)
@@ -1800,8 +1799,6 @@ def upload_photo():
     # compress image
     img.save(filepath, format="JPEG", quality=85, optimize=True)
 
-    print("photo size:", os.path.getsize(filepath))
-
     # generate correct static url
     photo_url = url_for("static", filename="uploads/profile.jpg")
 
@@ -1833,6 +1830,10 @@ def about():
 def reset_session():
     session.clear()
     return {"status": "reset_done"}
+
+@app.route("/robots.txt")
+def robots():
+    return send_from_directory(".", "robots.txt")
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT",10000))
