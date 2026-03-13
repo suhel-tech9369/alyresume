@@ -19,6 +19,7 @@ from flask import send_from_directory
 import io
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
 # ===============================
 # Load API Key
 # ===============================
@@ -1838,6 +1839,10 @@ def robots():
 @app.route("/sitemap.xml")
 def sitemap():
     return send_from_directory(".", "sitemap.xml")
+
+@app.route("/google903960e41c35f118.html")
+def google_verify():
+    return send_from_directory(".", "google903960e41c35f118.html")
 
 if __name__ == "__main__":
 
