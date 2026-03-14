@@ -377,6 +377,7 @@ let editedHTML = header.outerHTML + container.outerHTML;
           template: currentTemplate   // 🔥 यही असली चीज है
       })
   })
+  .then(res => res.json())
   .then(() => {
 
       let includeCover = coverLetterText !== "";
