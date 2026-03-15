@@ -94,11 +94,8 @@ if(newResumeBtn){
         userInput.value = "";
 
         // Detect if final resume generation step
-if (message.toLowerCase().includes("certificate")) {
-    showTyping("resume");
-} else {
-    showTyping();
-}
+		showTyping();
+
 
         try {
             const response = await fetch("/api/chat", {
@@ -109,8 +106,16 @@ if (message.toLowerCase().includes("certificate")) {
 
             const data = await response.json();
 
-            removeTyping();
-            addMessage(data.reply, "ai");
+removeTyping();
+if(data.generating){
+    showTyping("resume");
+    setTimeout(() => {
+        removeTyping();
+        addMessage(data.reply, "ai");
+    }, 1500);
+} else {
+    addMessage(data.reply, "ai");
+}
 
         } catch (error) {
 

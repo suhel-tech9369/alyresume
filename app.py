@@ -889,7 +889,7 @@ unless user specifically provides it.
         final_resume += instruction_msg
         session["resume_data"] = data
 
-        return jsonify({"reply": final_resume})
+        return jsonify({"reply": final_resume, "generating": True})
 
 
     # ===============================
