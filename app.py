@@ -4,7 +4,7 @@ import re
 import json
 import io
 import razorpay
-import PyPDF2
+import pdfplumber
 from flask import Flask, render_template, request, jsonify, session, send_file,redirect
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -1858,10 +1858,10 @@ def google_verify():
 #resume to cover letter
 def extract_pdf_text(file):
     file_bytes = file.read()
-    reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
     text = ""
-    for page in reader.pages:
-        text += page.extract_text() or ""
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
     return text.strip()
 
 @app.route("/cover-letter", methods=["GET", "POST"])
