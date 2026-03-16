@@ -4,7 +4,7 @@ import re
 import json
 import io
 import razorpay
-import pdfplumber
+from pdfminer.high_level import extract_text as pdfminer_extract
 from flask import Flask, render_template, request, jsonify, session, send_file,redirect
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -1858,11 +1858,13 @@ def google_verify():
 #resume to cover letter
 def extract_pdf_text(file):
     file_bytes = file.read()
-    text = ""
-    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text() or ""
-    return text.strip()
+    try:
+        text = pdfminer_extract(io.BytesIO(file_bytes))
+        if text and text.strip():
+            return text.strip()
+    except Exception:
+        pass
+    return ""
 
 @app.route("/cover-letter", methods=["GET", "POST"])
 def cover_letter_page():
@@ -1919,10 +1921,17 @@ def cover_letter_page():
     res = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": """You are a cover letter formatter. 
-    NEVER fill in placeholder fields like [EMPLOYER NAME], [COMPANY NAME], [COMPANY ADDRESS], [DATE].
-    These MUST remain exactly as written — do not replace them with anything.
-    User will fill these manually."""},
+            {"role": "system", "content": """You are a cover letter writer.
+    STRICT RULES:
+    1. Extract candidate real name, phone, email, address from resume text and write them DIRECTLY at top — no placeholders for these.
+    2. These fields user will fill — keep EXACTLY as written with guidance:
+       [DATE — Write today's date here, example: 16 March 2026]
+       [EMPLOYER NAME — Write Hiring Manager or HR name here, example: Mr. Rahul Sharma]
+       [COMPANY NAME — Write the company name where you are applying, example: TCS / Google]
+       [COMPANY ADDRESS — Write that company's office address here]
+    3. NEVER fill EMPLOYER NAME, COMPANY NAME, COMPANY ADDRESS, DATE yourself.
+    4. Write professional cover letter body based on resume.
+    5. Return ONLY the cover letter."""},
             {"role": "user", "content": prompt}
         ]
     )
@@ -1976,58 +1985,10 @@ def ats_checker_page():
 
     file = request.files.get("resume")
     job_description = request.form.get("job_description", "")
-    full_report = request.form.get("full_report", "false")
 
-    if not file and full_report == "false":
+    if not file:
         return jsonify({"error": "No file uploaded"}), 400
 
-    if full_report == "true":
-        # Full report session se nikalo
-        resume_text = session.get("ats_resume_text", "")
-        job_desc = session.get("ats_job_desc", "")
-
-        prompt = f"""
-You are an ATS Resume Expert.
-Analyze this resume against the job description.
-
-Resume:
-{resume_text}
-
-Job Description:
-{job_desc if job_desc else "Not provided - do general analysis"}
-
-Return in this EXACT format:
-
-STRONG POINTS:
-- point 1
-- point 2
-- point 3
-
-WEAK POINTS:
-- point 1
-- point 2
-- point 3
-
-MISSING KEYWORDS:
-- keyword 1
-- keyword 2
-- keyword 3
-
-IMPROVEMENTS:
-- improvement 1
-- improvement 2
-- improvement 3
-"""
-        res = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are an ATS Resume Expert."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return jsonify({"full_report": res.choices[0].message.content})
-
-    # Score only
     resume_text = extract_pdf_text(file)
     session["ats_resume_text"] = resume_text
     session["ats_job_desc"] = job_description
@@ -2109,8 +2070,6 @@ IMPROVEMENTS:
     )
 
     return jsonify({"full_report": res.choices[0].message.content})
-
-
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT",10000))
