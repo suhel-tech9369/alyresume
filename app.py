@@ -1857,7 +1857,8 @@ def google_verify():
 
 #resume to cover letter
 def extract_pdf_text(file):
-    reader = PyPDF2.PdfReader(file)
+    file_bytes = file.read()
+    reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
     text = ""
     for page in reader.pages:
         text += page.extract_text() or ""
