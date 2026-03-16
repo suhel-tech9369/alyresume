@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Interview Preparation - Get 20 Interview Questions Free</title>
+  <meta name="description" content="Upload your resume and get 20 interview questions with answers instantly. Hindi and English both available. Free tool.">
+  <meta name="keywords" content="interview questions, interview preparation, resume interview questions India, Hindi interview questions">
+  <meta name="robots" content="index, follow">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <style>
+    .tool-box {
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 40px;
+      background: #1e293b;
+      border-radius: 20px;
+    }
+    h2 { text-align: center; margin-bottom: 10px; }
+    .subtitle { color: #cbd5e1; text-align: center; margin-bottom: 30px; font-size: 15px; }
+    input[type=file] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    select {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+    .label { color: #cbd5e1; margin-bottom: 8px; font-size: 14px; display: block; }
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .result-box {
+      margin-top: 30px;
+      background: #0f172a;
+      padding: 25px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      color: #e2e8f0;
+      line-height: 1.8;
+      display: none;
+    }
+    .action-btns {
+      margin-top: 15px;
+      display: none;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .copy-btn {
+      padding: 12px 25px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .download-btn {
+      padding: 12px 25px;
+      background: #8b5cf6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .back-btn {
+      display: block;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    .loader {
+      text-align: center;
+      color: #facc15;
+      font-size: 16px;
+      margin-top: 20px;
+      display: none;
+    }
+    .free-badge {
+      display: inline-block;
+      background: #10b981;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="tool-box">
+  <a href="/" class="back-btn">⬅ Back to Home</a>
+  <h2>🎤 Interview Preparation <span class="free-badge">FREE</span></h2>
+  <p class="subtitle">Upload your resume — get 20 interview questions with answers based on YOUR profile. Hindi & English both available.</p>
+
+  <label class="label">📎 Upload Resume PDF</label>
+  <input type="file" id="resumeFile" accept=".pdf"/>
+
+  <label class="label">🌐 Select Language</label>
+  <select id="language">
+    <option value="English">English</option>
+    <option value="Hindi">Hindi / Hinglish</option>
+  </select>
+
+  <button class="btn" onclick="generate()">🎯 Generate Interview Questions</button>
+
+  <div class="loader" id="loader">⏳ Generating questions... Please wait (may take 30 seconds)</div>
+
+  <div class="result-box" id="result"></div>
+
+  <div class="action-btns" id="actionBtns">
+    <button class="copy-btn" onclick="copyText()">📋 Copy All</button>
+    <button class="download-btn" onclick="downloadPDF()">⬇ Download PDF</button>
+  </div>
+</div>
+
+<script>
+async function generate(){
+  let file = document.getElementById("resumeFile").files[0];
+  let language = document.getElementById("language").value;
+  if(!file){ alert("Please upload a PDF file."); return; }
+
+  document.getElementById("loader").style.display = "block";
+  document.getElementById("result").style.display = "none";
+  document.getElementById("actionBtns").style.display = "none";
+
+  let formData = new FormData();
+  formData.append("resume", file);
+  formData.append("language", language);
+
+  try {
+    let res = await fetch("/interview-prep", { method: "POST", body: formData });
+    let data = await res.json();
+
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("result").innerText = data.result;
+    document.getElementById("result").style.display = "block";
+    document.getElementById("actionBtns").style.display = "flex";
+  } catch(err) {
+    document.getElementById("loader").style.display = "none";
+    alert("Something went wrong. Please try again.");
+  }
+}
+
+function copyText(){
+  navigator.clipboard.writeText(document.getElementById("result").innerText);
+  alert("Copied ✅");
+}
+
+async function downloadPDF(){
+  let text = document.getElementById("result").innerText;
+  let res = await fetch("/download-interview-pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text })
+  });
+  let blob = await res.blob();
+  let url = window.URL.createObjectURL(blob);
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "InterviewQuestions.pdf";
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

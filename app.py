@@ -2113,6 +2113,103 @@ def download_ats_report():
         download_name="ATS_Report.pdf",
         mimetype="application/pdf"
     )
+
+#questions 20  -------------
+
+@app.route("/interview-prep", methods=["GET", "POST"])
+def interview_prep_page():
+    if request.method == "GET":
+        return render_template("interview_prep.html")
+
+    file = request.files.get("resume")
+    language = request.form.get("language", "English")
+
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    resume_text = extract_pdf_text(file)
+
+    prompt = f"""
+You are an expert Interview Coach.
+Read this resume carefully and generate 20 interview questions with detailed answers.
+
+Resume:
+{resume_text}
+
+Language: {language}
+
+STRICT RULES:
+- First 10 questions: based on skills, experience, education from THIS resume only
+- Last 10 questions: common HR questions relevant to this candidate
+- Every answer must be specific to THIS candidate — not generic
+- If language is Hindi then write in Hinglish (Hindi + English mix)
+- If language is English then write in pure English
+
+FORMAT — follow exactly:
+
+Q1: [Question]
+A1: [Detailed Answer]
+
+Q2: [Question]
+A2: [Detailed Answer]
+
+...till Q20.
+
+Return ONLY questions and answers — nothing else.
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an expert Interview Coach. Generate specific questions based on the resume provided."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"result": res.choices[0].message.content})
+
+
+@app.route("/download-interview-pdf", methods=["POST"])
+def download_interview_pdf():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib import colors
+
+    custom_style = ParagraphStyle(
+        'InterviewStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11.5,
+        leading=18,
+        textColor=colors.HexColor("#1a1a1a"),
+        spaceAfter=8,
+        leftIndent=10,
+        rightIndent=10
+    )
+
+    content = []
+    for line in text.split("\n"):
+        if line.strip() != "":
+            content.append(Paragraph(line, custom_style))
+
+    pdf.build(content)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="InterviewQuestions.pdf",
+        mimetype="application/pdf"
+    )
+
+
+
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT",10000))
