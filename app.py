@@ -4,6 +4,7 @@ import re
 import json
 import io
 import razorpay
+import PyPDF2
 from flask import Flask, render_template, request, jsonify, session, send_file,redirect
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -1843,6 +1844,122 @@ def sitemap():
 @app.route("/google903960e41c35f118.html")
 def google_verify():
     return send_from_directory(".", "google903960e41c35f118.html")
+
+
+#resume to cover letter
+def extract_pdf_text(file):
+    reader = PyPDF2.PdfReader(file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text() or ""
+    return text.strip()
+
+@app.route("/cover-letter", methods=["GET", "POST"])
+def cover_letter_page():
+    if request.method == "GET":
+        return render_template("cover_letter.html")
+
+    file = request.files.get("resume")
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    resume_text = extract_pdf_text(file)
+
+    prompt = f"""
+    You are a professional HR writer.
+    Read this resume and write a complete professional cover letter.
+
+    Resume:
+    {resume_text}
+
+    STRICT FORMAT:
+
+    [Candidate Full Name from resume]
+    [Candidate Address from resume]
+    [Candidate Phone from resume]
+    [Candidate Email from resume]
+
+    [DATE — Write today's date here]
+
+    [EMPLOYER NAME — Write name of Hiring Manager / HR here]
+    [COMPANY NAME — Write name of company you are applying to]
+    [COMPANY ADDRESS — Write address of that company here]
+
+    Dear Hiring Manager,
+
+    [3 professional paragraphs based on resume]
+
+    Warm regards,
+    [Candidate Full Name from resume]
+
+    ---NOTE---
+    Fields you need to fill manually:
+    - DATE: Write today's date
+    - EMPLOYER NAME: Write name of HR or Hiring Manager
+    - COMPANY NAME: Write name of company you are applying to
+    - COMPANY ADDRESS: Write address of that company
+    ---END NOTE---
+
+    STRICT RULES:
+    - Extract name, phone, email, address DIRECTLY from resume
+    - No labels like "Name:" or "Phone:"
+    - All placeholders in English only
+    - Return ONLY the cover letter
+    """
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": """You are a cover letter formatter. 
+    NEVER fill in placeholder fields like [EMPLOYER NAME], [COMPANY NAME], [COMPANY ADDRESS], [DATE].
+    These MUST remain exactly as written — do not replace them with anything.
+    User will fill these manually."""},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"result": res.choices[0].message.content})
+
+
+@app.route("/download-cover-letter-tool", methods=["POST"])
+def download_cover_letter_tool():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib import colors
+
+    custom_style = ParagraphStyle(
+        'CoverStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11.5,
+        leading=18,
+        textColor=colors.HexColor("#1a1a1a"),
+        spaceAfter=8,
+        leftIndent=10,
+        rightIndent=10
+    )
+
+    content = []
+    for line in text.split("\n"):
+        if line.strip() != "":
+            content.append(Paragraph(line, custom_style))
+
+    pdf.build(content)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="CoverLetter.pdf",
+        mimetype="application/pdf"
+    )
+
+
 
 if __name__ == "__main__":
 

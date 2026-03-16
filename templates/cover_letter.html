@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Free AI Cover Letter Generator - Upload Resume & Get Cover Letter Instantly</title>
+<meta name="description" content="Generate a free professional cover letter instantly using AI. Just upload your resume PDF and get a ready-to-use cover letter in seconds.">
+<meta name="keywords" content="free cover letter generator, AI cover letter, cover letter online India, cover letter from resume">
+<meta name="robots" content="index, follow">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <style>
+    .tool-box {
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 40px;
+      background: #1e293b;
+      border-radius: 20px;
+    }
+    h2 { text-align: center; margin-bottom: 10px; }
+    .subtitle { color: #cbd5e1; text-align: center; margin-bottom: 30px; font-size: 15px; }
+    input[type=file] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(90deg, #10b981, #059669);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .result-box {
+      margin-top: 30px;
+      background: #0f172a;
+      padding: 25px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      color: #e2e8f0;
+      line-height: 1.8;
+      display: none;
+    }
+    .action-btns {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      display: none;
+    }
+    .copy-btn, .download-btn {
+      padding: 10px 25px;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .copy-btn { background: #3b82f6; }
+    .download-btn { background: #10b981; }
+    .back-btn {
+      display: block;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    .loader {
+      text-align: center;
+      color: #facc15;
+      font-size: 16px;
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<div class="tool-box">
+  <a href="/" class="back-btn">⬅ Back to Home</a>
+  <h2>📄 Cover Letter Generator</h2>
+  <p class="subtitle">Upload your resume PDF — AI will write a professional cover letter instantly.</p>
+
+  <input type="file" id="resumeFile" accept=".pdf"/>
+  <button class="btn" onclick="generate()">Generate Cover Letter</button>
+
+  <div class="loader" id="loader">⏳ Generating... Please wait</div>
+
+  <div class="result-box" id="result"></div>
+
+  <div class="action-btns" id="actionBtns">
+    <button class="copy-btn" onclick="copyText()">📋 Copy</button>
+    <button class="download-btn" onclick="downloadPDF()">⬇ Download PDF</button>
+  </div>
+</div>
+
+<script>
+async function generate(){
+  let file = document.getElementById("resumeFile").files[0];
+  if(!file){ alert("Please upload a PDF file."); return; }
+  document.getElementById("loader").style.display = "block";
+  document.getElementById("result").style.display = "none";
+  document.getElementById("actionBtns").style.display = "none";
+  let formData = new FormData();
+  formData.append("resume", file);
+  let res = await fetch("/cover-letter", { method: "POST", body: formData });
+  let data = await res.json();
+  document.getElementById("loader").style.display = "none";
+  document.getElementById("result").innerHTML = '<div style="text-align:center; font-size:22px; font-weight:bold; letter-spacing:3px; margin-bottom:20px; color:#facc15; border-bottom: 2px solid #facc15; padding-bottom:10px;">✉ COVER LETTER</div>' + '<div contenteditable="true" id="editableContent" style="white-space:pre-wrap; color:#e2e8f0; outline:none; min-height:100px;">' + data.result + '</div>';
+  document.getElementById("result").style.display = "block";
+  document.getElementById("actionBtns").style.display = "flex";
+}
+
+function copyText(){
+  navigator.clipboard.writeText(document.getElementById("editableContent").innerText);
+  alert("Copied ✅");
+}
+
+async function downloadPDF(){
+  let text = document.getElementById("editableContent").innerText;
+  let cleanText = text.split("---NOTE---")[0].trim();
+  let res = await fetch("/download-cover-letter-tool", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: cleanText })
+  });
+  let blob = await res.blob();
+  let url = window.URL.createObjectURL(blob);
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "CoverLetter.pdf";
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
