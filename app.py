@@ -1588,11 +1588,14 @@ def admin_dashboard():
     c.execute("SELECT SUM(amount) FROM payments")
     total_revenue = c.fetchone()[0] or 0
 
-    c.execute("SELECT COUNT(*) FROM payments WHERE cover_letter = 0")
+    c.execute("SELECT COUNT(*) FROM payments WHERE cover_letter = 0 AND amount = 4900")
     resume_only = c.fetchone()[0]
 
     c.execute("SELECT COUNT(*) FROM payments WHERE cover_letter = 1")
     resume_cover = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM payments WHERE amount = 1100")
+    ats_sales = c.fetchone()[0]
 
     conn.close()
 
@@ -1629,6 +1632,7 @@ def admin_dashboard():
     <h3>Total Revenue: ₹ {total_revenue / 100}</h3>
     <h3>Resume Only Sales: {resume_only}</h3>
     <h3>Resume + Cover Sales: {resume_cover}</h3>
+    <h3>ATS Checker Sales: {ats_sales}</h3>
 
     <hr>
 
@@ -2070,6 +2074,45 @@ IMPROVEMENTS:
     )
 
     return jsonify({"full_report": res.choices[0].message.content})
+
+@app.route("/download-ats-report", methods=["POST"])
+def download_ats_report():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib import colors
+
+    custom_style = ParagraphStyle(
+        'ATSStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11.5,
+        leading=18,
+        textColor=colors.HexColor("#1a1a1a"),
+        spaceAfter=8,
+        leftIndent=10,
+        rightIndent=10
+    )
+
+    content = []
+    for line in text.split("\n"):
+        if line.strip() != "":
+            content.append(Paragraph(line, custom_style))
+
+    pdf.build(content)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="ATS_Report.pdf",
+        mimetype="application/pdf"
+    )
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT",10000))

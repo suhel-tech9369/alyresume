@@ -135,6 +135,11 @@
   </div>
 
   <div class="report-box" id="reportBox"></div>
+  <button id="downloadReportBtn" 
+  onclick="downloadReport()" 
+  style="display:none; margin-top:15px; padding:12px 30px; background:linear-gradient(90deg,#f59e0b,#d97706); color:white; font-size:15px; font-weight:bold; border:none; border-radius:10px; cursor:pointer;">
+  ⬇ Download ATS Report PDF
+</button>
 </div>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -222,6 +227,25 @@ async function getFullReport(){
   document.getElementById("reportBox").innerText = data.full_report;
   document.getElementById("reportBox").style.display = "block";
   document.getElementById("scoreBox").querySelector(".unlock-btn").style.display = "none";
+
+  // Download button dikhao
+  document.getElementById("downloadReportBtn").style.display = "inline-block";
+}
+
+async function downloadReport(){
+  let text = document.getElementById("reportBox").innerText;
+  let res = await fetch("/download-ats-report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text })
+  });
+  let blob = await res.blob();
+  let url = window.URL.createObjectURL(blob);
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "ATS_Report.pdf";
+  a.click();
+  window.URL.revokeObjectURL(url);
 }
 </script>
 </body>
