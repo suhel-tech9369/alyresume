@@ -540,8 +540,11 @@ let editedHTML = header.outerHTML + container.outerHTML;
 .catch(err => {
     console.error(err);
     document.getElementById("downloadLoader").style.display = "none";
-    alert("Something went wrong. Please try again.");
-	});
+    // 2 second baad automatically retry
+    setTimeout(() => {
+        downloadAllPDF();
+    }, 2000);
+});
   });
 
 }
