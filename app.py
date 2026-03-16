@@ -1420,7 +1420,14 @@ def create_order():
         print("DATA RECEIVED:", data)
 
         include_cover = data.get("cover_letter", False)
-        amount = 5900 if include_cover else 4900
+        ats_check = data.get("ats_check", False)
+
+        if ats_check:
+            amount = 1100
+        elif include_cover:
+            amount = 5900
+        else:
+            amount = 4900
 
         print("AMOUNT:", amount)
 
@@ -1466,9 +1473,11 @@ def verify_payment():
         amount = payment["amount"]
         download_token = str(uuid.uuid4())
         # ✅ Amount validation
-        if amount not in [4900, 5900]:
+        if amount not in [4900, 5900, 1100]:
             return jsonify({"status": "invalid_amount"}), 400
 
+        if amount == 1100:
+            session["paid_ats"] = True
         # Detect cover letter purchase
         include_cover = True if amount == 5900 else False
 
@@ -1959,6 +1968,146 @@ def download_cover_letter_tool():
         mimetype="application/pdf"
     )
 
+@app.route("/ats-checker", methods=["GET", "POST"])
+def ats_checker_page():
+    if request.method == "GET":
+        return render_template("ats_checker.html")
+
+    file = request.files.get("resume")
+    job_description = request.form.get("job_description", "")
+    full_report = request.form.get("full_report", "false")
+
+    if not file and full_report == "false":
+        return jsonify({"error": "No file uploaded"}), 400
+
+    if full_report == "true":
+        # Full report session se nikalo
+        resume_text = session.get("ats_resume_text", "")
+        job_desc = session.get("ats_job_desc", "")
+
+        prompt = f"""
+You are an ATS Resume Expert.
+Analyze this resume against the job description.
+
+Resume:
+{resume_text}
+
+Job Description:
+{job_desc if job_desc else "Not provided - do general analysis"}
+
+Return in this EXACT format:
+
+STRONG POINTS:
+- point 1
+- point 2
+- point 3
+
+WEAK POINTS:
+- point 1
+- point 2
+- point 3
+
+MISSING KEYWORDS:
+- keyword 1
+- keyword 2
+- keyword 3
+
+IMPROVEMENTS:
+- improvement 1
+- improvement 2
+- improvement 3
+"""
+        res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an ATS Resume Expert."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return jsonify({"full_report": res.choices[0].message.content})
+
+    # Score only
+    resume_text = extract_pdf_text(file)
+    session["ats_resume_text"] = resume_text
+    session["ats_job_desc"] = job_description
+
+    prompt = f"""
+You are an ATS Resume Expert.
+Analyze this resume and give ONLY the ATS score.
+
+Resume:
+{resume_text}
+
+Job Description:
+{job_description if job_description else "Not provided - do general analysis"}
+
+Return in this EXACT format only — nothing else:
+
+ATS SCORE: XX/100
+REASON: One line reason for this score
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an ATS Resume Expert."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"score": res.choices[0].message.content})
+
+
+@app.route("/ats-full-report", methods=["POST"])
+def ats_full_report():
+    if not session.get("paid_ats"):
+        return jsonify({"error": "Payment required"}), 403
+
+    resume_text = session.get("ats_resume_text", "")
+    job_desc = session.get("ats_job_desc", "")
+
+    prompt = f"""
+You are an ATS Resume Expert.
+Analyze this resume against the job description.
+
+Resume:
+{resume_text}
+
+Job Description:
+{job_desc if job_desc else "Not provided - do general analysis"}
+
+Return in this EXACT format:
+
+STRONG POINTS:
+- point 1
+- point 2
+- point 3
+
+WEAK POINTS:
+- point 1
+- point 2
+- point 3
+
+MISSING KEYWORDS:
+- keyword 1
+- keyword 2
+- keyword 3
+
+IMPROVEMENTS:
+- improvement 1
+- improvement 2
+- improvement 3
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an ATS Resume Expert."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"full_report": res.choices[0].message.content})
 
 
 if __name__ == "__main__":

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ATS Score Checker - Check Your Resume ATS Score Free</title>
+  <meta name="description" content="Check your resume ATS score free. Upload resume and get instant ATS analysis with improvement tips.">
+  <meta name="keywords" content="ATS score checker, resume ATS check, ATS resume analyzer India, free ATS checker">
+  <meta name="robots" content="index, follow">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <style>
+    .tool-box {
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 40px;
+      background: #1e293b;
+      border-radius: 20px;
+    }
+    h2 { text-align: center; margin-bottom: 10px; }
+    .subtitle { color: #cbd5e1; text-align: center; margin-bottom: 30px; font-size: 15px; }
+    input[type=file] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    .label { color: #cbd5e1; margin-bottom: 8px; font-size: 14px; display: block; }
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .score-box {
+      margin-top: 30px;
+      background: #0f172a;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+    }
+    .score-number {
+      font-size: 60px;
+      font-weight: bold;
+      color: #facc15;
+    }
+    .score-reason {
+      color: #cbd5e1;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+    .unlock-btn {
+      margin-top: 25px;
+      padding: 15px 40px;
+      background: linear-gradient(90deg, #10b981, #059669);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .report-box {
+      margin-top: 20px;
+      background: #0f172a;
+      padding: 25px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      color: #e2e8f0;
+      line-height: 1.8;
+      display: none;
+      text-align: left;
+    }
+    .back-btn {
+      display: block;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    .loader {
+      text-align: center;
+      color: #facc15;
+      font-size: 16px;
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<div class="tool-box">
+  <a href="/" class="back-btn">⬅ Back to Home</a>
+  <h2>🎯 ATS Score Checker</h2>
+  <p class="subtitle">Upload your resume and get your ATS score instantly. Full report in just ₹11.</p>
+
+  <label class="label">📎 Upload Resume PDF</label>
+  <input type="file" id="resumeFile" accept=".pdf"/>
+
+  <label class="label">📋 Paste Job Description (recommended for accurate score)</label>
+  <textarea id="jobDesc" rows="5" placeholder="Paste job description here for accurate ATS score..."></textarea>
+
+  <button class="btn" onclick="checkScore()">Check ATS Score — Free</button>
+
+  <div class="loader" id="loader">⏳ Analyzing resume... Please wait</div>
+
+  <div class="score-box" id="scoreBox">
+    <div class="score-number" id="scoreNumber">--</div>
+    <div class="score-reason" id="scoreReason"></div>
+    <p style="color:#cbd5e1; margin-top:20px; font-size:14px;">Want to know what's weak, what's missing and how to improve?</p>
+    <button class="unlock-btn" onclick="unlockReport()">🔓 Unlock Full Report — ₹11</button>
+  </div>
+
+  <div class="report-box" id="reportBox"></div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+async function checkScore(){
+  let file = document.getElementById("resumeFile").files[0];
+  if(!file){ alert("Please upload a PDF file."); return; }
+
+  document.getElementById("loader").style.display = "block";
+  document.getElementById("scoreBox").style.display = "none";
+  document.getElementById("reportBox").style.display = "none";
+
+  let formData = new FormData();
+  formData.append("resume", file);
+  formData.append("job_description", document.getElementById("jobDesc").value);
+
+  let res = await fetch("/ats-checker", { method: "POST", body: formData });
+  let data = await res.json();
+
+  document.getElementById("loader").style.display = "none";
+
+  // Score parse karo
+  let scoreText = data.score || "";
+  let scoreMatch = scoreText.match(/(\d+)\/100/);
+  let reasonMatch = scoreText.match(/REASON:\s*(.+)/);
+
+  document.getElementById("scoreNumber").innerText = scoreMatch ? scoreMatch[1] + "/100" : scoreText;
+  document.getElementById("scoreReason").innerText = reasonMatch ? reasonMatch[1] : "";
+  document.getElementById("scoreBox").style.display = "block";
+}
+
+async function unlockReport(){
+  let res = await fetch("/create-order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ats_check: true })
+  });
+  let data = await res.json();
+
+  if(data.skip_payment){
+    getFullReport();
+    return;
+  }
+
+  var options = {
+    key: data.key,
+    amount: data.amount,
+    currency: "INR",
+    name: "AlyResume",
+    description: "ATS Full Report",
+    order_id: data.order_id,
+    handler: function(response){
+      fetch("/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          razorpay_order_id: data.order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.status === "success"){
+          getFullReport();
+        } else {
+          alert("Payment failed ❌");
+        }
+      });
+    },
+    theme: { color: "#f59e0b" }
+  };
+
+  var rzp = new Razorpay(options);
+  rzp.open();
+}
+
+async function getFullReport(){
+  document.getElementById("loader").style.display = "block";
+
+  let res = await fetch("/ats-full-report", { method: "POST" });
+  let data = await res.json();
+
+  document.getElementById("loader").style.display = "none";
+  document.getElementById("reportBox").innerText = data.full_report;
+  document.getElementById("reportBox").style.display = "block";
+  document.getElementById("scoreBox").querySelector(".unlock-btn").style.display = "none";
+}
+</script>
+</body>
+</html>
