@@ -4,6 +4,7 @@ import re
 import json
 import io
 import razorpay
+from pdfminer.high_level import extract_text as pdfminer_extract
 from flask import Flask, render_template, request, jsonify, session, send_file,redirect
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -1410,6 +1411,8 @@ def create_order():
         last_payment_time = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
 
         if datetime.now() - last_payment_time < timedelta(minutes=30):
+            session["paid"] = True
+            session.modified = True
             return jsonify({
                 "skip_payment": True
             })
@@ -1419,7 +1422,11 @@ def create_order():
         print("DATA RECEIVED:", data)
 
         include_cover = data.get("cover_letter", False)
-        amount = 5900 if include_cover else 4900
+
+        if include_cover:
+            amount = 100
+        else:
+            amount = 100
 
         print("AMOUNT:", amount)
 
@@ -1465,11 +1472,10 @@ def verify_payment():
         amount = payment["amount"]
         download_token = str(uuid.uuid4())
         # ✅ Amount validation
-        if amount not in [4900, 5900]:
+        if amount not in [100, 100]:
             return jsonify({"status": "invalid_amount"}), 400
-
         # Detect cover letter purchase
-        include_cover = True if amount == 5900 else False
+        include_cover = True if amount == 100 else False
 
         # 3️⃣ Save payment in database
         conn = sqlite3.connect("payments.db")
@@ -1583,7 +1589,6 @@ def admin_dashboard():
 
     c.execute("SELECT COUNT(*) FROM payments WHERE cover_letter = 1")
     resume_cover = c.fetchone()[0]
-
     conn.close()
 
     table_rows = ""
@@ -1657,9 +1662,7 @@ def download_resume():
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--single-process",
-                "--no-zygote"
+                "--disable-gpu"
             ]
         )
         context = browser.new_context(viewport={"width": 1200, "height": 1600})
@@ -1742,6 +1745,7 @@ def download_resume():
         page.close()
         context.close()
         browser.close()
+
 
     return send_file(
         io.BytesIO(pdf_bytes),
@@ -1843,6 +1847,355 @@ def sitemap():
 @app.route("/google903960e41c35f118.html")
 def google_verify():
     return send_from_directory(".", "google903960e41c35f118.html")
+
+
+#resume to cover letter
+def extract_pdf_text(file):
+    file_bytes = file.read()
+    try:
+        text = pdfminer_extract(io.BytesIO(file_bytes))
+        if text and text.strip():
+            return text.strip()
+    except Exception:
+        pass
+    return ""
+
+@app.route("/cover-letter", methods=["GET", "POST"])
+def cover_letter_page():
+    if request.method == "GET":
+        return render_template("cover_letter.html")
+
+    file = request.files.get("resume")
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    resume_text = extract_pdf_text(file)
+
+    prompt = f"""
+    You are a professional HR writer.
+    Read this resume and write a complete professional cover letter.
+
+    Resume:
+    {resume_text}
+
+    STRICT FORMAT:
+
+    [Candidate Full Name from resume]
+    [Candidate Address from resume]
+    [Candidate Phone from resume]
+    [Candidate Email from resume]
+
+    [DATE — Write today's date here]
+
+    [EMPLOYER NAME — Write name of Hiring Manager / HR here]
+    [COMPANY NAME — Write name of company you are applying to]
+    [COMPANY ADDRESS — Write address of that company here]
+
+    Dear Hiring Manager,
+
+    [3 professional paragraphs based on resume]
+
+    Warm regards,
+    [Candidate Full Name from resume]
+
+    ---NOTE---
+    Fields you need to fill manually:
+    - DATE: Write today's date
+    - EMPLOYER NAME: Write name of HR or Hiring Manager
+    - COMPANY NAME: Write name of company you are applying to
+    - COMPANY ADDRESS: Write address of that company
+    ---END NOTE---
+
+    STRICT RULES:
+    - Extract name, phone, email, address DIRECTLY from resume
+    - No labels like "Name:" or "Phone:"
+    - All placeholders in English only
+    - Return ONLY the cover letter
+    """
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": """You are a cover letter writer.
+    STRICT RULES:
+    1. Extract candidate real name, phone, email, address from resume text and write them DIRECTLY at top — no placeholders for these.
+    2. These fields user will fill — keep EXACTLY as written with guidance:
+       [DATE — Write today's date here, example: 16 March 2026]
+       [EMPLOYER NAME — Write Hiring Manager or HR name here, example: Mr. Rahul Sharma]
+       [COMPANY NAME — Write the company name where you are applying, example: TCS / Google]
+       [COMPANY ADDRESS — Write that company's office address here]
+    3. NEVER fill EMPLOYER NAME, COMPANY NAME, COMPANY ADDRESS, DATE yourself.
+    4. Write professional cover letter body based on resume.
+    5. Return ONLY the cover letter."""},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"result": res.choices[0].message.content})
+
+
+@app.route("/download-cover-letter-tool", methods=["POST"])
+def download_cover_letter_tool():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib import colors
+
+    custom_style = ParagraphStyle(
+        'CoverStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11.5,
+        leading=18,
+        textColor=colors.HexColor("#1a1a1a"),
+        spaceAfter=8,
+        leftIndent=10,
+        rightIndent=10
+    )
+
+    content = []
+    for line in text.split("\n"):
+        if line.strip() != "":
+            content.append(Paragraph(line, custom_style))
+
+    pdf.build(content)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="CoverLetter.pdf",
+        mimetype="application/pdf"
+    )
+
+@app.route("/ats-checker", methods=["GET", "POST"])
+def ats_checker_page():
+    if request.method == "GET":
+        return render_template("ats_checker.html")
+
+    file = request.files.get("resume")
+    job_description = request.form.get("job_description", "")
+
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    resume_text = extract_pdf_text(file)
+    session["ats_resume_text"] = resume_text
+    session["ats_job_desc"] = job_description
+
+    prompt = f"""
+You are an ATS Resume Expert.
+Analyze this resume and give ONLY the ATS score.
+
+Resume:
+{resume_text}
+
+Job Description:
+{job_description if job_description else "Not provided - do general analysis"}
+
+Return in this EXACT format only — nothing else:
+
+ATS SCORE: XX/100
+REASON: One line reason for this score
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an ATS Resume Expert."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"score": res.choices[0].message.content})
+
+
+@app.route("/ats-full-report", methods=["POST"])
+def ats_full_report():
+    resume_text = session.get("ats_resume_text", "")
+    job_desc = session.get("ats_job_desc", "")
+
+    prompt = f"""
+You are an ATS Resume Expert.
+Analyze this resume against the job description.
+
+Resume:
+{resume_text}
+
+Job Description:
+{job_desc if job_desc else "Not provided - do general analysis"}
+
+Return in this EXACT format:
+
+STRONG POINTS:
+- point 1
+- point 2
+- point 3
+
+WEAK POINTS:
+- point 1
+- point 2
+- point 3
+
+MISSING KEYWORDS:
+- keyword 1
+- keyword 2
+- keyword 3
+
+IMPROVEMENTS:
+- improvement 1
+- improvement 2
+- improvement 3
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an ATS Resume Expert."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"full_report": res.choices[0].message.content})
+
+@app.route("/download-ats-report", methods=["POST"])
+def download_ats_report():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib import colors
+
+    custom_style = ParagraphStyle(
+        'ATSStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11.5,
+        leading=18,
+        textColor=colors.HexColor("#1a1a1a"),
+        spaceAfter=8,
+        leftIndent=10,
+        rightIndent=10
+    )
+
+    content = []
+    for line in text.split("\n"):
+        if line.strip() != "":
+            content.append(Paragraph(line, custom_style))
+
+    pdf.build(content)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="ATS_Report.pdf",
+        mimetype="application/pdf"
+    )
+
+#questions 20  -------------
+
+@app.route("/interview-prep", methods=["GET", "POST"])
+def interview_prep_page():
+    if request.method == "GET":
+        return render_template("interview_prep.html")
+
+    file = request.files.get("resume")
+    language = request.form.get("language", "English")
+
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    resume_text = extract_pdf_text(file)
+
+    prompt = f"""
+You are an expert Interview Coach.
+Read this resume carefully and generate 20 interview questions with detailed answers.
+
+Resume:
+{resume_text}
+
+Language: {language}
+
+STRICT RULES:
+- First 10 questions: based on skills, experience, education from THIS resume only
+- Last 10 questions: common HR questions relevant to this candidate
+- Every answer must be specific to THIS candidate — not generic
+- If language is Hindi then write in Hinglish (Hindi + English mix)
+- If language is English then write in pure English
+
+FORMAT — follow exactly:
+
+Q1: [Question]
+A1: [Detailed Answer]
+
+Q2: [Question]
+A2: [Detailed Answer]
+
+...till Q20.
+
+Return ONLY questions and answers — nothing else.
+"""
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an expert Interview Coach. Generate specific questions based on the resume provided."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return jsonify({"result": res.choices[0].message.content})
+
+
+@app.route("/download-interview-pdf", methods=["POST"])
+def download_interview_pdf():
+    data = request.get_json()
+    text = data.get("text", "")
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib import colors
+
+    custom_style = ParagraphStyle(
+        'InterviewStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11.5,
+        leading=18,
+        textColor=colors.HexColor("#1a1a1a"),
+        spaceAfter=8,
+        leftIndent=10,
+        rightIndent=10
+    )
+
+    content = []
+    for line in text.split("\n"):
+        if line.strip() != "":
+            content.append(Paragraph(line, custom_style))
+
+    pdf.build(content)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="InterviewQuestions.pdf",
+        mimetype="application/pdf"
+    )
+
+
 
 if __name__ == "__main__":
 
