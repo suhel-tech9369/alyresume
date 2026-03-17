@@ -1420,11 +1420,8 @@ def create_order():
         print("DATA RECEIVED:", data)
 
         include_cover = data.get("cover_letter", False)
-        ats_check = data.get("ats_check", False)
 
-        if ats_check:
-            amount = 1100
-        elif include_cover:
+        if include_cover:
             amount = 5900
         else:
             amount = 4900
@@ -1473,11 +1470,8 @@ def verify_payment():
         amount = payment["amount"]
         download_token = str(uuid.uuid4())
         # ✅ Amount validation
-        if amount not in [4900, 5900, 1100]:
+        if amount not in [4900, 5900]:
             return jsonify({"status": "invalid_amount"}), 400
-
-        if amount == 1100:
-            session["paid_ats"] = True
         # Detect cover letter purchase
         include_cover = True if amount == 5900 else False
 
@@ -1588,15 +1582,11 @@ def admin_dashboard():
     c.execute("SELECT SUM(amount) FROM payments")
     total_revenue = c.fetchone()[0] or 0
 
-    c.execute("SELECT COUNT(*) FROM payments WHERE cover_letter = 0 AND amount = 4900")
+    c.execute("SELECT COUNT(*) FROM payments WHERE cover_letter = 0")
     resume_only = c.fetchone()[0]
 
     c.execute("SELECT COUNT(*) FROM payments WHERE cover_letter = 1")
     resume_cover = c.fetchone()[0]
-
-    c.execute("SELECT COUNT(*) FROM payments WHERE amount = 1100")
-    ats_sales = c.fetchone()[0]
-
     conn.close()
 
     table_rows = ""
@@ -1632,7 +1622,6 @@ def admin_dashboard():
     <h3>Total Revenue: ₹ {total_revenue / 100}</h3>
     <h3>Resume Only Sales: {resume_only}</h3>
     <h3>Resume + Cover Sales: {resume_cover}</h3>
-    <h3>ATS Checker Sales: {ats_sales}</h3>
 
     <hr>
 
@@ -2026,9 +2015,6 @@ REASON: One line reason for this score
 
 @app.route("/ats-full-report", methods=["POST"])
 def ats_full_report():
-    if not session.get("paid_ats"):
-        return jsonify({"error": "Payment required"}), 403
-
     resume_text = session.get("ats_resume_text", "")
     job_desc = session.get("ats_job_desc", "")
 

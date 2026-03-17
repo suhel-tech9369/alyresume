@@ -115,7 +115,8 @@
 <div class="tool-box">
   <a href="/" class="back-btn">⬅ Back to Home</a>
   <h2>🎯 ATS Score Checker</h2>
-  <p class="subtitle">Upload your resume and get your ATS score instantly. Full report in just ₹11.</p>
+  <p class="subtitle">Upload your resume and get your ATS score 
+  and full report instantly. Completely FREE!</p>
 
   <label class="label">📎 Upload Resume PDF</label>
   <input type="file" id="resumeFile" accept=".pdf"/>
@@ -130,8 +131,7 @@
   <div class="score-box" id="scoreBox">
     <div class="score-number" id="scoreNumber">--</div>
     <div class="score-reason" id="scoreReason"></div>
-    <p style="color:#cbd5e1; margin-top:20px; font-size:14px;">Want to know what's weak, what's missing and how to improve?</p>
-    <button class="unlock-btn" onclick="unlockReport()">🔓 Unlock Full Report — ₹11</button>
+   <button class="unlock-btn" onclick="unlockReport()">📊 Get Full Report — FREE</button>
   </div>
 
   <div class="report-box" id="reportBox"></div>
@@ -172,49 +172,7 @@ async function checkScore(){
 }
 
 async function unlockReport(){
-  let res = await fetch("/create-order", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ats_check: true })
-  });
-  let data = await res.json();
-
-  if(data.skip_payment){
-    getFullReport();
-    return;
-  }
-
-  var options = {
-    key: data.key,
-    amount: data.amount,
-    currency: "INR",
-    name: "AlyResume",
-    description: "ATS Full Report",
-    order_id: data.order_id,
-    handler: function(response){
-      fetch("/verify-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          razorpay_order_id: data.order_id,
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_signature: response.razorpay_signature
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if(data.status === "success"){
-          getFullReport();
-        } else {
-          alert("Payment failed ❌");
-        }
-      });
-    },
-    theme: { color: "#f59e0b" }
-  };
-
-  var rzp = new Razorpay(options);
-  rzp.open();
+  getFullReport();
 }
 
 async function getFullReport(){
