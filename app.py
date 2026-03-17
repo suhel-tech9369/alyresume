@@ -1431,7 +1431,7 @@ def create_order():
         if type_ == "ats":
             amount = 1100   # ₹11
         else:
-            amount = 100   # ₹49 (resume + cover)
+            amount = 4900   # ₹49 (resume + cover)
 
         print("AMOUNT:", amount)
 
@@ -1475,7 +1475,7 @@ def verify_payment():
         download_token = str(uuid.uuid4())
 
         # 🔥 VALID AMOUNTS
-        if amount not in [100, 1100]:
+        if amount not in [4900, 1100]:
             return jsonify({"status": "invalid_amount"}), 400
 
         # 🔥 TYPE DETECT
