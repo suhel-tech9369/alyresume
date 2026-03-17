@@ -381,6 +381,53 @@ let editedHTML = header.outerHTML + container.outerHTML;
   .then(() => {
 
       let includeCover = coverLetterText !== "";
+	  
+	  // 🔥 FREE TEMPLATE CHECK
+if(currentTemplate.includes("template1")){
+
+    fetch("/download-resume", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            template: currentTemplate,
+            html: editedHTML
+        })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "Resume.pdf";
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        // ✅ COVER LETTER ALSO DOWNLOAD
+        if(includeCover){
+            fetch("/download-cover-letter", {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body: JSON.stringify({ text: coverLetterText })
+            })
+            .then(res=>res.blob())
+            .then(blob=>{
+                let url = window.URL.createObjectURL(blob);
+                let a = document.createElement("a");
+                a.href = url;
+                a.download = "CoverLetter.pdf";
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
+        }
+
+        document.getElementById("downloadLoader").style.display = "none";
+    });
+
+    return;
+}
 
       fetch("/create-order", {
         method: "POST",
