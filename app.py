@@ -1651,137 +1651,136 @@ def admin_logout():
 @app.route("/download-resume", methods=["POST"])
 @limiter.limit("5 per minute")
 def download_resume():
+
     print("=== DOWNLOAD CALLED ===")
 
     if not session.get("paid"):
-        print("=== NOT PAID ===")
         return jsonify({"error": "Payment required"}), 403
 
     data = request.get_json()
     template_path = data.get("template")
-    print(f"=== TEMPLATE PATH: {template_path} ===")
+    edited_html = data.get("html")
+
+    if not edited_html:
+        return "NO edited content found", 400
 
     try:
         with sync_playwright() as p:
-            print("=== PLAYWRIGHT STARTED ===")
+
             browser = p.chromium.launch(
                 headless=True,
                 args=[
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
                     "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                    "--single-process",
-                    "--no-zygote",
-                    "--disable-dev-shm-usage",
-                    "--disable-extensions",
-                    "--disable-background-networking",
-                    "--disable-default-apps",
-                    "--disable-sync",
-                    "--disable-translate",
-                    "--hide-scrollbars",
-                    "--metrics-recording-only",
-                    "--mute-audio",
-                    "--no-first-run",
-                    "--safebrowsing-disable-auto-update"
+                    "--disable-gpu"
                 ]
             )
-            print("=== BROWSER LAUNCHED ===")
-            context = browser.new_context(viewport={"width": 1200, "height": 1600})
 
-            session_cookie = request.cookies.get("session")
-            if session_cookie:
-                context.add_cookies([{
-                    "name": "session",
-                    "value": session_cookie,
-                    "domain": "127.0.0.1",
-                    "path": "/"
-                }])
+            context = browser.new_context(
+                viewport={"width": 1200, "height": 1600}
+            )
 
             page = context.new_page()
             page.set_default_timeout(60000)
 
-            edited_html = data.get("html")
-            if not edited_html:
-                print("=== NO HTML FOUND ===")
-                return "NO edited content found", 400
+            # ===============================
+            # CSS LOAD
+            # ===============================
+            template_name = template_path.split("-")[0].replace("/", "")
+            css_path = f"static/{template_name}.css"
 
+            css_content = ""
+            if os.path.exists(css_path):
+                with open(css_path, "r") as f:
+                    css_content = f.read()
+
+            # ===============================
+            # PHOTO BASE64
+            # ===============================
             photo_path = "static/uploads/profile.jpg"
             photo_base64 = ""
+
             if os.path.exists(photo_path):
                 with open(photo_path, "rb") as img_file:
                     photo_base64 = base64.b64encode(img_file.read()).decode("utf-8")
-                print("=== PHOTO FOUND ===")
-            else:
-                print("=== NO PHOTO ===")
 
-            port = os.environ.get('PORT', 10000)
-            print(f"=== GOING TO URL: http://127.0.0.1:{port}{template_path} ===")
-            page.goto(
-                f"http://127.0.0.1:{port}{template_path}",
-                wait_until="domcontentloaded"
-            )
-            print("=== PAGE LOADED ===")
-            page.wait_for_timeout(1500)
+            # ===============================
+            # SAFE PHOTO INJECT
+            # ===============================
+            if photo_base64 and 'id="profileImg"' in edited_html:
+                edited_html = edited_html.replace(
+                    'id="profileImg"',
+                    f'id="profileImg" src="data:image/jpeg;base64,{photo_base64}"'
+                )
 
-            page.evaluate("""
-            (data) => {
-                const container = document.querySelector(".container");
-                if(container) container.outerHTML = data.html;
-                const oldHeader = document.querySelector(".top-header");
-                if(oldHeader) oldHeader.remove();
-                document.querySelectorAll('.watermark-preview').forEach(el => el.remove());
-            }
-            """, {"html": edited_html, "photo": photo_base64})
-            page.wait_for_timeout(500)
+            # ===============================
+            # FINAL HTML
+            # ===============================
+            full_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
 
-            if photo_base64:
-                page.evaluate("""
-                (p) => {
-                    let existing = document.getElementById("profileImg");
-                    if(!existing){
-                        let header = document.querySelector(".top-header");
-                        if(header){
-                            let div = document.createElement("div");
-                            div.className = "photo";
-                            let img = document.createElement("img");
-                            img.id = "profileImg";
-                            div.appendChild(img);
-                            header.insertBefore(div, header.firstChild);
-                        }
-                    }
-                    let img = document.getElementById("profileImg");
-                    if(img) img.src = "data:image/jpeg;base64," + p;
-                }
-                """, photo_base64)
+<style>
+{css_content}
+</style>
 
-            page.wait_for_timeout(1500)
-            template_name = template_path.split("-")[0].replace("/", "")
-            page.add_style_tag(path=f"static/{template_name}.css")
-            page.add_style_tag(content="""
-                .watermark-preview { display: none !important; }
-                .remove-btn, .x-btn, button { display: none !important; }
-            """)
+<style>
+body {{
+    margin: 0;
+    padding: 0;
+}}
 
+.top-bar {{ display: none !important; }}
+.watermark-preview {{ display: none !important; }}
+button {{ display: none !important; }}
+</style>
+
+</head>
+
+<body>
+{edited_html}
+</body>
+</html>
+"""
+
+            print("HTML LENGTH:", len(full_html))
+
+            # ===============================
+            # LOAD CONTENT
+            # ===============================
+            page.set_content(full_html, wait_until="domcontentloaded")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(1000)
+
+            # ===============================
+            # PDF
+            # ===============================
             pdf_bytes = page.pdf(
                 format="A4",
                 print_background=True,
                 scale=1.12,
-                margin={"top": "0mm", "bottom": "0mm", "left": "0mm", "right": "0mm"}
+                margin={
+                    "top": "0mm",
+                    "bottom": "0mm",
+                    "left": "0mm",
+                    "right": "0mm"
+                }
             )
-            print(f"=== PDF SIZE: {len(pdf_bytes)} bytes ===")
+
+            print("PDF SIZE:", len(pdf_bytes))
+
             page.close()
             context.close()
             browser.close()
-            print("=== BROWSER CLOSED ===")
 
     except Exception as e:
-        print(f"=== ERROR: {e} ===")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-    print("=== SENDING PDF ===")
     return send_file(
         io.BytesIO(pdf_bytes),
         as_attachment=True,
