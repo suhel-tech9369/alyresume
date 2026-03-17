@@ -1407,29 +1407,33 @@ def create_order():
     row = c.fetchone()
     conn.close()
 
-    if row:
-        last_payment_time = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
-
-        if datetime.now() - last_payment_time < timedelta(minutes=30):
-            session["paid"] = True
-            session.modified = True
-            return jsonify({
-                "skip_payment": True
-            })
-
     try:
         data = request.get_json()
         print("DATA RECEIVED:", data)
 
+        type_ = data.get("type")   # ats or resume
         include_cover = data.get("cover_letter", False)
 
-        if include_cover:
-            amount = 100
+        # 🔥 SAFE SKIP LOGIC (IMPORTANT FIX)
+        if row:
+            last_payment_time = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
+
+            # 👉 ATS payment ko resume skip me use mat karo
+            if type_ != "ats":
+                if datetime.now() - last_payment_time < timedelta(minutes=30):
+                    session["paid"] = True
+                    session.modified = True
+                    return jsonify({
+                        "skip_payment": True
+                    })
+
+        # 🔥 FINAL PRICING
+        if type_ == "ats":
+            amount = 1100   # ₹11
         else:
-            amount = 100
+            amount = 100   # ₹49 (resume + cover)
 
         print("AMOUNT:", amount)
-
 
         order = razorpay_client.order.create({
             "amount": amount,
@@ -1459,29 +1463,31 @@ def verify_payment():
     razorpay_signature = data.get("razorpay_signature")
 
     try:
-        # 1️⃣ Signature Verify
         razorpay_client.utility.verify_payment_signature({
             'razorpay_order_id': razorpay_order_id,
             'razorpay_payment_id': razorpay_payment_id,
             'razorpay_signature': razorpay_signature
         })
 
-        # 2️⃣ Fetch payment details from Razorpay (extra security)
         payment = razorpay_client.payment.fetch(razorpay_payment_id)
-
         amount = payment["amount"]
-        download_token = str(uuid.uuid4())
-        # ✅ Amount validation
-        if amount not in [100, 100]:
-            return jsonify({"status": "invalid_amount"}), 400
-        # Detect cover letter purchase
-        include_cover = True if amount == 100 else False
 
-        # 3️⃣ Save payment in database
+        download_token = str(uuid.uuid4())
+
+        # 🔥 VALID AMOUNTS
+        if amount not in [100, 1100]:
+            return jsonify({"status": "invalid_amount"}), 400
+
+        # 🔥 TYPE DETECT
+        if amount == 1100:
+            payment_type = "ats"
+        else:
+            payment_type = "resume"
+
+        # 🔥 SAVE DB
         conn = sqlite3.connect("payments.db")
         c = conn.cursor()
 
-        # Prevent duplicate payment insert
         c.execute("SELECT * FROM payments WHERE payment_id = ?", (razorpay_payment_id,))
         existing = c.fetchone()
 
@@ -1491,14 +1497,14 @@ def verify_payment():
 
         c.execute("""
             INSERT INTO payments 
-            (order_id, payment_id, signature, amount, cover_letter,download_token, created_at)
+            (order_id, payment_id, signature, amount, cover_letter, download_token, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             razorpay_order_id,
             razorpay_payment_id,
             razorpay_signature,
             amount,
-            include_cover,
+            True if payment_type == "resume" else False,
             download_token,
             datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
@@ -1506,17 +1512,23 @@ def verify_payment():
         conn.commit()
         conn.close()
 
-        session["paid"] = True
+        # 🔥 SESSION CONTROL
+        if payment_type == "resume":
+            session["paid"] = True
+        elif payment_type == "ats":
+            session["ats_paid"] = True
+
         session["paid_time"] = datetime.now().isoformat()
         session.modified = True
 
-        return jsonify({"status": "success",
-                        "token":download_token})
+        return jsonify({
+            "status": "success",
+            "token": download_token
+        })
 
     except Exception as e:
-        print("VERIFY ERROR:",e)
-
-        return jsonify({"status": "failed", "error":str(e)}), 400
+        print("VERIFY ERROR:", e)
+        return jsonify({"status": "failed", "error": str(e)}), 400
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin_login():
