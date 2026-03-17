@@ -1411,6 +1411,8 @@ def create_order():
         last_payment_time = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
 
         if datetime.now() - last_payment_time < timedelta(minutes=30):
+            session["paid"] = True
+            session.modified = True
             return jsonify({
                 "skip_payment": True
             })
@@ -1660,9 +1662,7 @@ def download_resume():
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--single-process",
-                "--no-zygote"
+                "--disable-gpu"
             ]
         )
         context = browser.new_context(viewport={"width": 1200, "height": 1600})
