@@ -543,10 +543,7 @@ let editedHTML = header.outerHTML + container.outerHTML;
 .catch(err => {
     console.error(err);
     document.getElementById("downloadLoader").style.display = "none";
-    // 2 second baad automatically retry
-    setTimeout(() => {
-        downloadAllPDF();
-    }, 2000);
+    alert("Something went wrong. Please try again.");
 });
   });
 
