@@ -108,27 +108,20 @@ href="{{ url_for('static', filename='template3.css') }}">
         {{ languages.content }}
       </p>
     </div>
-<div class="sidebar-section">
-  <h3 contenteditable="true">
-    HOBBIES
-    <button onclick="this.parentElement.parentElement.remove()">X</button>
-  </h3>
-  <p contenteditable="true">
-Add hobbies here (optional).
-Remove this section if not needed.
-</p>
-</div>
+{% for num,sec in extra_sections.items() %}
+  {% if "hobbie" in sec.title.lower() or "link" in sec.title.lower() %}
+  <div class="sidebar-section">
+    <h3 contenteditable="true">
+      {{ sec.title }}
+      <button onclick="this.parentElement.parentElement.remove()">X</button>
+    </h3>
+    <p contenteditable="true" style="white-space:pre-line;">
+      {{ sec.content }}
+    </p>
+  </div>
+  {% endif %}
+{% endfor %}
 
-<div class="sidebar-section">
-  <h3 contenteditable="true">
-    LINKS
-    <button onclick="this.parentElement.parentElement.remove()">X</button>
-  </h3>
-  <p contenteditable="true">
-Add LinkedIn / Portfolio / Website links here (optional).
-Remove this section if not needed.
-</p>
-</div>
   </div>
 
 
@@ -180,6 +173,7 @@ Remove this section if not needed.
 
 <!-- EXTRA SECTIONS (GPT / NUMBER BASED) -->
 {% for num,sec in extra_sections.items() %}
+  {% if "hobbie" not in sec.title.lower() and "link" not in sec.title.lower() %}
 <section>
 
   <h3 contenteditable="true">
@@ -192,6 +186,7 @@ Remove this section if not needed.
   </p>
 
 </section>
+  {% endif %}
 {% endfor %}
   </div>
 

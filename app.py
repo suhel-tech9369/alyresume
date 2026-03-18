@@ -208,28 +208,30 @@ def photo_rule(country, lang):
 # ===============================
 def ask_in_language(lang, question):
 
-    # 🔥 FIX: If English → no translation
     if lang.strip().lower().startswith("e"):
         return question
 
-    # 🔥 Only Hindi users get translation
     prompt = f"""
-Translate this question naturally into user's language.
+Translate this text into Hinglish (Hindi + English mix).
 
-User language: {lang}
+IMPORTANT RULES:
+- Keep the SAME meaning
+- DO NOT remove anything
+- DO NOT skip "Example"
+- KEEP examples EXACTLY same
+- KEEP line breaks same
+- Translate ONLY main question text
+- DO NOT translate URLs, numbers, examples
 
-Rules:
-- Hindi → Hinglish style
-- English → Full English
+Text:
+{question}
 
-Question: {question}
-
-Return ONLY translated question.
+Return translated text.
 """
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "system", "content": prompt}]
+        messages=[{"role": "user", "content": prompt}]
     )
 
     return response.choices[0].message.content.strip()
@@ -301,7 +303,8 @@ def api_chat():
         data["language"] = user_message
         session["step"] = "country"
 
-        q = "Great! Which country are you applying for?"
+        q = """Great! Which country are you applying for?
+Example: India / Germany / UAE"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
     # STEP 2: Apply Country
@@ -310,7 +313,8 @@ def api_chat():
         data["apply_country"] = user_message
         session["step"] = "job_role"
 
-        q = "What job role are you applying for?"
+        q = """What job role are you applying for?
+        Example: Software Developer / Electrician / Accountant"""
 
         return jsonify({
             "reply": ask_in_language(data["language"], q)
@@ -323,7 +327,8 @@ def api_chat():
         data["job_role"] = user_message
         session["step"] = "experience_type"
 
-        q = "Are you fresher or experienced?"
+        q = """Are you fresher or experienced?
+        Example: fresher / experienced"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -336,11 +341,13 @@ def api_chat():
         if "exp" in data["experience_type"]:
             data["companies"] = []
             session["step"] = "total_exp"
-            q = "How many years of total experience do you have? (or type: skip)"
+            q = """How many years of total experience do you have? (or type: skip)
+            Example: 2 years / 6 months"""
             return jsonify({"reply": ask_in_language(data["language"], q)})
 
         session["step"] = "full_name"
-        q = "What is your full name?"
+        q = """What is your full name?
+                Example: Thomas """
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -357,7 +364,9 @@ def api_chat():
         data["total_exp"] = user_message
         session["step"] = "company_name"
 
-        q = "Which company did you work in most recently? (type:company name/ skip / self / business)"
+        q = q = """Which company did you work in most recently?
+(type: company name / skip / self / business)
+Example: TCS / Infosys / self"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -385,7 +394,8 @@ def api_chat():
         data["companies"].append(company)
 
         session["step"] = "company_duration"
-        q = "In this company, you worked from which year to which year?"
+        q = """In this company, you worked from which year to which year?
+        Example: 2021 - 2023"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -415,7 +425,8 @@ def api_chat():
             return jsonify({"reply": ask_in_language(data["language"], q)})
 
         session["step"] = "full_name"
-        q = "What is your full name?"
+        q = """What is your full name?
+        Example: Thomas """
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -426,7 +437,8 @@ def api_chat():
         data["full_name"] = clean_text(user_message)
         session["step"] = "address"
 
-        q = "What is your full address?"
+        q = """What is your full address?
+        Example: Lucknow, Uttar Pradesh, India"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -440,7 +452,8 @@ def api_chat():
             data["current_country"] = "India"
 
         session["step"] = "email"
-        q = "Email address?"
+        q = """Email address?
+        Example: aly123@gmail.com"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -455,7 +468,8 @@ def api_chat():
         data["email"] = user_message
         session["step"] = "phone"
 
-        q = "Phone number?"
+        q = """Phone number?
+        Example: +91 9876543210"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -466,7 +480,8 @@ def api_chat():
         data["phone"] = user_message
         session["step"] = "education"
 
-        q = "What is your highest qualification or degree?"
+        q = """What is your highest qualification or degree?
+        Example: B.Tech in Computer Science"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -477,7 +492,8 @@ def api_chat():
         data["education"] = user_message
         session["step"] = "college"
 
-        q = "Which college/university did you study in?"
+        q = """Which college/university did you study in?
+        Example: Delhi University"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -488,7 +504,8 @@ def api_chat():
         data["college"] = user_message
         session["step"] = "completion_year"
 
-        q = "What is your completion year?"
+        q = """What is your completion year?
+        Example: 2023"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -499,7 +516,8 @@ def api_chat():
         data["completion_year"] = user_message
         session["step"] = "languages"
 
-        q = "Which languages do you know?"
+        q = """Which languages do you know?
+        Example: Hindi, English"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -510,7 +528,8 @@ def api_chat():
         data["languages"] = user_message
         session["step"] = "skills"
 
-        q = "Do you know your skills or should I generate ATS-friendly skills? (type: generate)"
+        q = """Do you know your skills or should I generate ATS-friendly skills? (type: generate)
+        Example: Python, HTML, CSS OR type: generate"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
 
@@ -529,11 +548,56 @@ def api_chat():
         else:
             data["skills"] = user_message
 
-        session["step"] = "extra_notes"
+        session["step"] = "extra_custom"
 
-        q = "Any extra notes? (Certificate, Availability)"
+        q = """Any extra notes? (Certificate, Availability)
+        Example: Completed Python course from Coursera"""
         return jsonify({"reply": ask_in_language(data["language"], q)})
 
+    # ===============================
+    # STEP: EXTRA CUSTOM INPUT
+    # ===============================
+    if step == "extra_custom":
+
+        data["extra_custom"] = user_message
+        session["step"] = "extra_notes"
+
+        if data["language"].lower().startswith("h"):
+            q = """Kya aap kuch aur add karna chahte hain?
+
+    Aap add kar sakte hain:
+    - Achievement
+    - Project
+    - Hobbies (sidebar me jayega)
+    - Links (LinkedIn, Portfolio)
+
+    Example:
+    "Achievements add karo: Coding competition jeeta"
+    "Hobbies add karo: Cricket"
+    "Links add karo: linkedin.com/xyz"
+    👉 Iske alawa jo bhi aap add karna chahte hain, seedha message me likh dein.
+Main khud samajh kar use sahi section me daal dunga.
+
+    Skip likh sakte hain."""
+        else:
+            q = """Do you want to add anything else?
+
+    You can add:
+    - Achievements
+    - Projects
+    - Hobbies (sidebar)
+    - Links (LinkedIn, Portfolio)
+
+    Example:
+    "Add Achievements: Won competition"
+    "Add Hobbies: Cricket"
+    "Add Links: linkedin.com/xyz"
+    👉 You can also type anything else you want to add.
+I will automatically understand and place it in the correct section.
+
+    Type 'skip' to continue."""
+
+        return jsonify({"reply": q})
 
     # ===============================
     # STEP 14: Resume Generate
@@ -774,8 +838,27 @@ unless user specifically provides it.
         • Never convert bullets into numbers.
         • Follow Europass ATS format.
         • Follow user answers exactly.
+        
+        SMART EXTRACTION RULE:
+
+        • If user writes "hobby" or "I like" → treat as Hobbies
+        • If user writes "linkedin" or "portfolio" → treat as Links
+        • BUT if link is related to project → keep it inside Projects
+        
+        Examples:
+        - "I like cricket" → Hobbies
+        - "linkedin.com/xyz" → Links
+        - "Project: made website (github link)" → Project (NOT links)
+        
+        FINAL RULE:
+        • Hobbies → sidebar
+        • Links → sidebar
+        • Project links → inside Projects section
+        • बाकी सब → new section (right side)
 
         --------------------------------------------------
+        Extra Custom Instructions:
+        {data.get("extra_custom","")}
 
         User Data:
         {data}
@@ -1019,7 +1102,7 @@ def parse_numbered_resume(text):
     sections = {}
 
     # 🔥 Strict heading match (line start only)
-    pattern = r"^\s*(\d+)\.\s+(.+)$"
+    pattern = r"^\s*(\d+)\.\s+(.+?)(:|-)?\s*$"
 
     matches = list(re.finditer(pattern, text, re.MULTILINE))
 
@@ -1028,7 +1111,7 @@ def parse_numbered_resume(text):
         start = matches[i].end()
 
         number = matches[i].group(1).strip()
-        title = matches[i].group(2).strip()
+        title = matches[i].group(2).strip().lower()
 
         end = matches[i+1].start() if i+1 < len(matches) else len(text)
 
@@ -2240,7 +2323,20 @@ def download_interview_pdf():
         mimetype="application/pdf"
     )
 
+# ===============================
+# BLOG PAGE
+# ===============================
+@app.route("/blog")
+def blog():
+    return render_template("blog.html")
 
+@app.route("/blog/resume-kaise-banaye")
+def blog_resume():
+    return render_template("blog_resume.html")
+
+@app.route("/blog/ats-resume")
+def blog_ats():
+    return render_template("blog_ats.html")
 
 if __name__ == "__main__":
 

@@ -1,28 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
 <url>
   <loc>https://alyresume.com/</loc>
   <priority>1.0</priority>
   <changefreq>weekly</changefreq>
 </url>
+
 <url>
   <loc>https://alyresume.com/chat</loc>
-  <priority>0.8</priority>
+  <priority>0.9</priority>
   <changefreq>weekly</changefreq>
 </url>
+
+<url>
+  <loc>https://alyresume.com/blog</loc>
+  <priority>0.9</priority>
+  <changefreq>weekly</changefreq>
+</url>
+
+<url>
+  <loc>https://alyresume.com/blog/resume-kaise-banaye</loc>
+  <priority>0.9</priority>
+  <changefreq>monthly</changefreq>
+</url>
+
+<url>
+  <loc>https://alyresume.com/blog/ats-resume</loc>
+  <priority>0.9</priority>
+  <changefreq>monthly</changefreq>
+</url>
+
 <url>
   <loc>https://alyresume.com/cover-letter</loc>
   <priority>0.8</priority>
   <changefreq>weekly</changefreq>
 </url>
+
 <url>
   <loc>https://alyresume.com/ats-checker</loc>
   <priority>0.8</priority>
   <changefreq>weekly</changefreq>
 </url>
+
 <url>
   <loc>https://alyresume.com/interview-prep</loc>
   <priority>0.8</priority>
   <changefreq>weekly</changefreq>
 </url>
+
 </urlset>
