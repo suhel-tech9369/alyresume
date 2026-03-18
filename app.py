@@ -1749,8 +1749,13 @@ def download_resume():
 
     print("=== DOWNLOAD CALLED ===")
 
-    if not session.get("paid"):
-        return jsonify({"error": "Payment required"}), 403
+    data = request.get_json()
+    template_path = data.get("template")
+
+    # 🔥 FREE TEMPLATE (template1)
+    if "template1" not in template_path:
+        if not session.get("paid"):
+            return jsonify({"error": "Payment required"}), 403
 
     data = request.get_json()
     template_path = data.get("template")
