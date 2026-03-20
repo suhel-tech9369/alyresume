@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>Free JD-Based AI Resume Builder | ATS 90+ Resume from Job Description | AlyResume</title>
+
+  <meta name="description" content="Free JD-based resume builder — paste job description and get ATS 90+ resume instantly. Template 1 bilkul free. No signup required. Job description se resume banaye AI se free me.">
+
+  <meta name="keywords" content="
+  free JD based resume builder,
+  free job description resume builder,
+  free ATS resume from job description,
+  job description se resume kaise banaye free,
+  JD se resume banaye free,
+  free resume builder job description,
+  free resume builder India,
+  free ATS 90 score resume,
+  free AI resume builder India,
+  free resume builder no signup,
+  free job description resume generator,
+  free resume kaise banaye job ke liye,
+  free ATS friendly resume India,
+  free job description based CV maker,
+  free resume banane wali website,
+  free CV maker India,
+  resume builder free download,
+  free resume without signup,
+  bina signup resume banaye free,
+  free me resume kaise banaye,
+  job description paste karo resume banao free,
+  JD based resume free,
+  free professional resume builder,
+  ATS resume free India,
+  free resume 2025 India,
+  JD based resume builder,
+  job description resume builder,
+  ATS resume from job description,
+  job description se resume kaise banaye,
+  JD se resume banaye,
+  ATS 90 score resume,
+  AI resume builder India,
+  resume builder no signup,
+  job description resume generator,
+  resume kaise banaye job ke liye,
+  ATS friendly resume India,
+  job description based CV maker,
+  resume banane wali website free
+  ">
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <meta name="author" content="AlyResume">
+  <meta name="language" content="English, Hindi">
+  <meta name="revisit-after" content="2 days">
+
+  <meta property="og:title" content="Free JD-Based Resume Builder — ATS 90+ Score | AlyResume">
+  <meta property="og:description" content="Job description paste karo aur ATS 90+ resume pao. Template 1 free. No signup, instant download.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://alyresume.com/static/logo.png">
+  <meta property="og:url" content="https://alyresume.com/jd-resume">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Free JD-Based Resume Builder — ATS 90+ Score">
+  <meta name="twitter:description" content="Job description se resume banaye free. ATS-friendly CV builder India. No signup required.">
+  <meta name="twitter:image" content="https://alyresume.com/static/logo.png">
+
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='jd_chat.css') }}">
+</head>
+<body>
+
+<!-- ===== JD INPUT SCREEN ===== -->
+<div id="jdScreen" class="jd-screen">
+  <div class="jd-card">
+
+    <img src="{{ url_for('static', filename='logo.png') }}" height="70" alt="AlyResume">
+
+<h1>Free JD-Based Resume Builder</h1>
+    <p class="jd-sub">
+      Paste the job description — AI will build an ATS 90+ resume tailored exactly for that role.
+    </p>
+
+    <div class="jd-badges">
+  <span>✅ Template 1 Free</span>
+  <span>🎯 JD Matched Skills</span>
+  <span>⚡ ATS 90+ Score</span>
+</div>
+
+    <textarea id="jdInput" placeholder="Paste Job Description here...
+
+Example:
+We are hiring a Python Developer with 3+ years experience.
+Skills required: Django, REST API, PostgreSQL, Docker, AWS...
+Responsibilities: Build REST APIs, manage cloud infra..."></textarea>
+
+    <!-- LANGUAGE SELECT — clearly labeled -->
+    <div class="lang-label-wrap">
+      <span class="lang-label-text">🗣 Chat Language</span>
+      <span class="lang-label-note">
+        (Resume will always be in English — this only changes the chat language)
+      </span>
+    </div>
+    <select id="langSelect" class="jd-select">
+      <option value="English">English — Chat in English</option>
+      <option value="Hindi">हिंदी / Hinglish — Chat in Hindi+English</option>
+    </select>
+
+    <button id="analyzeBtn" class="jd-btn">
+      🚀 Analyze JD &amp; Start Resume
+    </button>
+
+    <p class="jd-pricing">Template 1 — ₹Free &nbsp;|&nbsp; Template 2 &amp; 3 — ₹49</p>
+    <p class="jd-note">⚠ Digital product. No refunds once resume is downloaded.</p>
+
+  </div>
+</div>
+
+<!-- ===== CHAT SCREEN ===== -->
+<div id="chatScreen" class="jd-chat-wrapper" style="display:none;">
+
+  <!-- Header — Template button yahan hai -->
+  <div class="jd-chat-header">
+    <div class="header-left">
+      <span class="header-title">💬 JD Resume Assistant</span>
+      <span class="step-badge" id="stepBadge">Step 1/9</span>
+    </div>
+    <div class="header-right">
+      <button id="jdTemplateBtn" class="template-header-btn">🎨 Template</button>
+      <button id="jdNewBtn" class="new-btn">🔄 New</button>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressFill" style="width:11%"></div>
+  </div>
+
+  <!-- Chat Messages -->
+  <div class="jd-chat-box" id="jdChatBox"></div>
+
+  <!-- Input -->
+  <div class="jd-chat-input">
+    <input id="jdUserInput" type="text"
+           placeholder="Type your answer..."
+           autocomplete="off"/>
+    <button id="jdSendBtn">Send</button>
+  </div>
+
+</div>
+
+<!-- ===== TEMPLATE POPUP ===== -->
+<div id="jdTemplatePopup" class="jd-template-popup">
+  <div class="jd-popup-box">
+
+    <h3>Select Resume Template</h3>
+
+    <div class="jd-template-grid">
+
+      <div class="jd-template-card" data-template="1">
+        <img src="{{ url_for('static', filename='template1.jpg') }}" alt="Template 1">
+        <p>Template 1</p>
+        <span class="price-tag green">Free</span>
+      </div>
+
+      <div class="jd-template-card" data-template="2">
+        <img src="{{ url_for('static', filename='template2.jpg') }}" alt="Template 2">
+        <p>Template 2</p>
+        <span class="price-tag blue">₹49</span>
+      </div>
+
+      <div class="jd-template-card" data-template="3">
+        <img src="{{ url_for('static', filename='template3.jpg') }}" alt="Template 3">
+        <p>Template 3</p>
+        <span class="price-tag blue">₹49</span>
+      </div>
+
+    </div>
+
+    <button id="jdCloseTemplate" class="jd-close-btn">Close</button>
+
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='jd_chat.js') }}"></script>
+</body>
+</html>

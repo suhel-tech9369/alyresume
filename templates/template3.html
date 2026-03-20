@@ -25,7 +25,7 @@ href="{{ url_for('static', filename='template3.css') }}">
 <!-- 🔥 TOP BUTTON BAR -->
 <div class="top-bar" style="text-align:center; margin:20px;">
 
-  <button onclick="window.location.href='/chat'">⬅ Back</button>
+  <button onclick="window.location.href='/'">⬅ Back</button>
 
   <button onclick="downloadAllPDF()">⬇ Download PDF</button>
 
@@ -111,8 +111,8 @@ href="{{ url_for('static', filename='template3.css') }}">
 {% for num,sec in extra_sections.items() %}
   {% if "hobbie" in sec.title.lower() or "link" in sec.title.lower() %}
   <div class="sidebar-section">
-    <h3 contenteditable="true">
-      {{ sec.title }}
+     <h3 contenteditable="true">
+  {{ sec.title | upper }}
       <button onclick="this.parentElement.parentElement.remove()">X</button>
     </h3>
     <p contenteditable="true" style="white-space:pre-line;">
@@ -176,8 +176,8 @@ href="{{ url_for('static', filename='template3.css') }}">
   {% if "hobbie" not in sec.title.lower() and "link" not in sec.title.lower() %}
 <section>
 
-  <h3 contenteditable="true">
-    {{ sec.title }}
+   <h3 contenteditable="true">
+  {{ sec.title | upper }}
     <button onclick="this.parentElement.parentElement.remove()">X</button>
   </h3>
 
@@ -225,19 +225,14 @@ function addSection(){
   `;
 
   // References section ढूँढो
-  let refSection = Array.from(
-    document.querySelectorAll(".content section")
-  ).find(sec =>
-    sec.innerText.toLowerCase().includes("reference")
-  );
+  let allSections = document.querySelectorAll(".content section");
+  let lastSection = allSections[allSections.length - 1];
 
-  if(refSection){
-    refSection.parentNode.insertBefore(sec, refSection);
-  }
-  else{
+  if(lastSection){
+    lastSection.parentNode.insertBefore(sec, lastSection.nextSibling);
+  } else {
     document.querySelector(".content").appendChild(sec);
   }
-
 }
 
 

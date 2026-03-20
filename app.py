@@ -467,6 +467,7 @@ Example: TCS / Infosys / self"""
 
         data["email"] = user_message
         session["step"] = "phone"
+        session["resume_data"] = data
 
         q = """Phone number?
         Example: +91 9876543210"""
@@ -479,6 +480,7 @@ Example: TCS / Infosys / self"""
     if step == "phone":
         data["phone"] = user_message
         session["step"] = "education"
+        session["resume_data"] = data
 
         q = """What is your highest qualification or degree?
         Example: B.Tech in Computer Science"""
@@ -1138,7 +1140,7 @@ def template_preview():
         return "Resume not generated yet!"
 
     resume_text = data["final_resume"]
-
+    resume_text = resume_text.split("--------------------")[0].strip()
     sections = parse_numbered_resume(resume_text)
 
     # ===============================
@@ -1193,6 +1195,7 @@ def template2_preview():
         return "Resume not generated yet!"
 
     resume_text = data["final_resume"]
+    resume_text = resume_text.split("--------------------")[0].strip()
 
     sections = parse_numbered_resume(resume_text)
     # ===============================
@@ -1248,6 +1251,7 @@ def template3_preview():
         return "Resume not generated yet!"
 
     resume_text = data["final_resume"]
+    resume_text = resume_text.split("--------------------")[0].strip()
 
     sections = parse_numbered_resume(resume_text)
 
@@ -2342,6 +2346,842 @@ def blog_resume():
 @app.route("/blog/ats-resume")
 def blog_ats():
     return render_template("blog_ats.html")
+
+
+# ==============================
+# JD RESUME PAGE
+# ==============================
+@app.route("/jd-resume")
+def jd_resume_page():
+    return render_template("jd_resume.html")
+
+
+# ==============================
+# JD START — JD Analyze
+# ==============================
+@app.route("/api/jd-start", methods=["POST"])
+def api_jd_start():
+
+    data     = request.get_json()
+    jd_text  = data.get("jd", "")
+    language = data.get("language", "English")
+    lang_h   = language.lower().startswith("h")
+
+    extract_prompt = f"""
+    You are an ATS Resume Expert.
+    Read this EXACT job description carefully — word by word.
+
+    Job Description:
+    {jd_text}
+
+    Extract information ONLY from the job description above.
+    Do NOT add anything that is not in the job description.
+
+    Return ONLY this JSON (no extra text, no markdown):
+    {{
+      "job_title": "",
+      "skills": [],
+      "experience_level": "",
+      "experience_years": "",
+      "responsibilities": [],
+      "summary_hint": "",
+      "country": ""
+    }}
+
+    Rules:
+    - job_title: exact job title mentioned in JD
+    - skills: Extract EVERY skill keyword from JD — programming languages, frameworks, databases, tools, cloud platforms, methodologies, soft skills, certifications, equipment — EVERYTHING mentioned. Extract from ALL sections — title, requirements, responsibilities, preferred qualifications. Do NOT add skills that are not in JD.
+    - experience_level: "fresher" / "1-2 years" / "3-5 years" / "5+ years"
+    - experience_years: exact experience text from JD like "3 years" / "2+ years" / "" if not mentioned
+    - responsibilities: 3-4 key duties directly from JD
+    - summary_hint: 2-3 line ATS summary using ONLY JD keywords
+    - country: country name if clearly mentioned in JD, else empty string ""
+    """
+
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": """You are an ATS Resume Expert.
+    CRITICAL RULES:
+    - Read the job description carefully
+    - Extract skills ONLY from the provided job description
+    - Do NOT invent or add skills not mentioned in JD
+    - Return valid JSON only, no markdown, no extra text"""},
+            {"role": "user", "content": extract_prompt}
+        ]
+    )
+
+    ai_text = res.choices[0].message.content.strip()
+    ai_text = re.sub(r"```json|```", "", ai_text).strip()
+
+    try:
+        jd_analysis = json.loads(ai_text)
+    except json.JSONDecodeError:
+        return jsonify({"error": "JD analysis failed. Please try again."}), 500
+
+    detected_country   = jd_analysis.get("country", "").strip()
+    experience_years   = jd_analysis.get("experience_years", "").strip()
+
+    session["jd_step"] = "experience_type"
+    session["jd_data"] = {
+        "language"         : language,
+        "jd_text"          : jd_text,
+        "jd_analysis"      : jd_analysis,
+        "job_role"         : jd_analysis.get("job_title", ""),
+        "skills"           : ", ".join(jd_analysis.get("skills", [])),
+        "summary_hint"     : jd_analysis.get("summary_hint", ""),
+        "detected_country" : detected_country,
+        "experience_years" : experience_years,
+        "apply_country"    : None,
+        "experience_type"  : None,
+        "full_name"        : None,
+        "address"          : None,
+        "email"            : None,
+        "phone"            : None,
+        "total_exp"        : None,
+        "companies"        : [],
+        "education"        : None,
+        "college"          : None,
+        "completion_year"  : None,
+        "languages"        : None,
+        "extra_notes"      : None,
+        "final_resume"     : None,
+    }
+
+    job_title    = jd_analysis.get("job_title", "this role")
+    skills_short = ", ".join(jd_analysis.get("skills", [])[:4])
+
+    if lang_h:
+        reply = (
+            f"✅ JD analyze ho gaya!\n\n"
+            f"🎯 **Role:** {job_title}\n"
+            f"🔧 **Skills mili:** {skills_short}...\n\n"
+            f"Ye skills automatically resume me jaayengi.\n"
+            f"Ab bas aapki personal details chahiye.\n\n"
+            f"Aap **fresher** hain ya **experienced**?"
+        )
+    else:
+        reply = (
+            f"✅ JD analyzed!\n\n"
+            f"🎯 **Role:** {job_title}\n"
+            f"🔧 **Skills found:** {skills_short}...\n\n"
+            f"These will be auto-added to your resume.\n"
+            f"I just need your personal details now.\n\n"
+            f"Are you **fresher** or **experienced**?"
+        )
+
+    return jsonify({
+        "reply"  : reply,
+        "chips"  : ["fresher", "experienced"],
+        "step"   : "experience_type"
+    })
+
+# ==============================
+# JD CHAT — Personal Questions
+# ==============================
+def _ask_experience(data, lang_h):
+    experience_years = data.get("experience_years", "")
+    exp_type         = data.get("experience_type", "")
+
+    if "exp" in exp_type:
+        if experience_years:
+            if lang_h:
+                reply = (
+                    f"JD me **{experience_years}** ka experience manga gaya hai.\n"
+                    f"Aapke paas kitne saal ka experience hai?"
+                )
+            else:
+                reply = (
+                    f"The JD requires **{experience_years}** of experience.\n"
+                    f"How many years of experience do you have?"
+                )
+        else:
+            if lang_h:
+                reply = "Aapka total experience kitne saal ka hai?"
+            else:
+                reply = "How many years of total experience do you have?"
+
+        session["jd_step"] = "total_exp"
+        session["jd_data"] = data
+        return jsonify({
+            "reply"  : reply,
+            "example": "3 years / 6 months / 2.5 years  (or: skip)",
+            "step"   : "total_exp"
+        })
+    else:
+        session["jd_step"] = "full_name"
+        session["jd_data"] = data
+        return jsonify({
+            "reply"  : "Aapka poora naam kya hai?" if lang_h else "What is your full name?",
+            "example": "Rahul Sharma / Priya Singh",
+            "step"   : "full_name"
+        })
+
+
+@app.route("/api/jd-chat", methods=["POST"])
+def api_jd_chat():
+
+    user_message = request.json.get("message", "").strip()
+    step         = session.get("jd_step", "experience_type")
+    data         = session.get("jd_data", {})
+    lang         = data.get("language", "English")
+    lang_h       = lang.lower().startswith("h")
+    msg_lower    = user_message.lower()
+
+    def save_and_reply(reply, chips=None, example=None, next_step=None):
+        session["jd_data"] = data
+        if next_step:
+            session["jd_step"] = next_step
+        resp = {"reply": reply}
+        if chips:     resp["chips"]   = chips
+        if example:   resp["example"] = example
+        if next_step: resp["step"]    = next_step
+        return jsonify(resp)
+
+    # ==============================
+    # STEP: EXPERIENCE TYPE
+    # ==============================
+    if step == "experience_type":
+
+        data["experience_type"] = msg_lower
+
+        detected_country = data.get("detected_country", "")
+
+        if "exp" in msg_lower:
+            data["companies"] = []
+
+        if detected_country:
+            if lang_h:
+                reply = (
+                    f"JD me job **{detected_country}** ke liye hai.\n"
+                    f"Kya yahi sahi hai, ya koi aur country hai?"
+                )
+                chips = [detected_country, "Koi aur hai"]
+            else:
+                reply = (
+                    f"I found that this job is in **{detected_country}**.\n"
+                    f"Is that correct, or is it a different country?"
+                )
+                chips = [detected_country, "Different country"]
+
+            return save_and_reply(reply, chips=chips, next_step="country_confirm")
+        else:
+            if lang_h:
+                reply = "JD me country nahi mili, batao kahan apply karna hai?"
+            else:
+                reply = "I couldn't find a country in the JD. Which country are you applying to?"
+
+            return save_and_reply(
+                reply,
+                example="India / Germany / UAE / USA",
+                next_step="country"
+            )
+
+    # ==============================
+    # STEP: COUNTRY CONFIRM
+    # ==============================
+    if step == "country_confirm":
+
+        detected_country = data.get("detected_country", "")
+
+        if (user_message.lower() == detected_country.lower()
+                or user_message.lower() in ["yes","haan","ha","correct","sahi"]):
+            data["apply_country"] = detected_country
+        elif user_message.lower() in ["different country","koi aur hai","no","nahi"]:
+            if lang_h:
+                reply = "Theek hai, kaunse country me apply kar rahe hain?"
+            else:
+                reply = "Got it! Which country are you applying to?"
+            return save_and_reply(
+                reply,
+                example="India / Germany / UAE / USA",
+                next_step="country"
+            )
+        else:
+            data["apply_country"] = user_message
+
+        return _ask_experience(data, lang_h)
+
+    # ==============================
+    # STEP: COUNTRY (manual)
+    # ==============================
+    if step == "country":
+        data["apply_country"] = user_message
+        return _ask_experience(data, lang_h)
+
+    # ==============================
+    # STEP: TOTAL EXP
+    # ==============================
+    if step == "total_exp":
+
+        if msg_lower != "skip":
+            data["total_exp"] = user_message
+
+        if lang_h:
+            reply = (
+                "Sabse recent company ka naam kya hai?\n"
+                "(skip likhein agar company nahi hai)"
+            )
+        else:
+            reply = (
+                "Which company did you work in most recently?\n"
+                "(type skip if none)"
+            )
+
+        return save_and_reply(
+            reply,
+            example="TCS / Infosys / self / freelance / skip",
+            next_step="company_name"
+        )
+
+    # ==============================
+    # STEP: COMPANY NAME
+    # ==============================
+    if step == "company_name":
+
+        if msg_lower == "skip":
+            return save_and_reply(
+                "Aapka poora naam kya hai?" if lang_h else "What is your full name?",
+                example="Rahul Sharma / Priya Singh",
+                next_step="full_name"
+            )
+
+        if any(w in msg_lower for w in ["self","own","freelance","business","khud"]):
+            company = {"name": "Self-Employed"}
+        else:
+            company = {"name": user_message}
+
+        if "companies" not in data:
+            data["companies"] = []
+
+        data["companies"].append(company)
+
+        if lang_h:
+            reply = f"Aap **{company['name']}** me kis year se kis year tak the?"
+        else:
+            reply = f"You worked at **{company['name']}** from which year to which year?"
+
+        return save_and_reply(
+            reply,
+            example="2021 - 2024 / Jan 2022 - Mar 2024",
+            next_step="company_duration"
+        )
+
+    # ==============================
+    # STEP: COMPANY DURATION
+    # ==============================
+    if step == "company_duration":
+
+        data["companies"][-1]["duration"] = user_message
+
+        if lang_h:
+            reply = "Kya ek aur company add karni hai?"
+        else:
+            reply = "Do you want to add another company?"
+
+        return save_and_reply(reply, chips=["yes","no"], next_step="add_more_company")
+
+    # ==============================
+    # STEP: ADD MORE COMPANY
+    # ==============================
+    if step == "add_more_company":
+
+        answer = strict_yes_no(user_message)
+        if answer is None:
+            return jsonify({
+                "reply": "⚠ Please answer yes or no",
+                "chips": ["yes","no"]
+            })
+
+        if answer == "yes":
+            return save_and_reply(
+                "Agla company ka naam?" if lang_h else "Next company name?",
+                example="Wipro / HCL / self",
+                next_step="company_name"
+            )
+
+        return save_and_reply(
+            "Aapka poora naam kya hai?" if lang_h else "What is your full name?",
+            example="Rahul Sharma / Priya Singh",
+            next_step="full_name"
+        )
+
+    # ==============================
+    # STEP: FULL NAME
+    # ==============================
+    if step == "full_name":
+
+        data["full_name"] = clean_text(user_message)
+
+        return save_and_reply(
+            "Aapka poora address?" if lang_h else "Your full address?",
+            example="Lucknow, Uttar Pradesh, India",
+            next_step="address"
+        )
+
+    # ==============================
+    # STEP: ADDRESS
+    # ==============================
+    if step == "address":
+
+        data["address"] = user_message
+
+        return save_and_reply(
+            "Aapka email address?" if lang_h else "Your email address?",
+            example="rahul.sharma@gmail.com",
+            next_step="email"
+        )
+
+    # ==============================
+    # STEP: EMAIL
+    # ==============================
+    if step == "email":
+
+        if not is_valid_email(user_message):
+            return jsonify({
+                "reply": "⚠ Sahi email dalein.\n💡 Example: name@gmail.com"
+                         if lang_h else
+                         "⚠ Please enter a valid email.\n💡 Example: name@gmail.com"
+            })
+
+        data["email"] = user_message
+
+        return save_and_reply(
+            "Aapka phone number?" if lang_h else "Your phone number?",
+            example="+91 9876543210",
+            next_step="phone"
+        )
+
+    # ==============================
+    # STEP: PHONE
+    # ==============================
+    if step == "phone":
+
+        data["phone"] = user_message
+
+        return save_and_reply(
+            "Aapki sabse badi degree ya qualification?" if lang_h
+            else "Your highest qualification or degree?",
+            example="B.Tech in Computer Science / MBA / 12th Pass",
+            next_step="education"
+        )
+
+    # ==============================
+    # STEP: EDUCATION
+    # ==============================
+    if step == "education":
+
+        data["education"] = user_message
+
+        return save_and_reply(
+            "College ya university ka naam?" if lang_h
+            else "College or university name?",
+            example="IET Lucknow / Delhi University / AKTU",
+            next_step="college"
+        )
+
+    # ==============================
+    # STEP: COLLEGE
+    # ==============================
+    if step == "college":
+
+        data["college"] = user_message
+
+        return save_and_reply(
+            "Completion year?" ,
+            example="2021 / 2023 / Pursuing",
+            next_step="completion_year"
+        )
+
+    # ==============================
+    # STEP: COMPLETION YEAR
+    # ==============================
+    if step == "completion_year":
+
+        data["completion_year"] = user_message
+
+        return save_and_reply(
+            "Aap kaun kaun si languages jaante hain?" if lang_h
+            else "Which languages do you know?",
+            example="Hindi, English / English, French",
+            next_step="languages"
+        )
+
+    # ==============================
+    # STEP: LANGUAGES → SKILLS
+    # ==============================
+    if step == "languages":
+
+        data["languages"] = user_message
+
+        jd_skills_list = data.get("jd_analysis", {}).get("skills", [])
+
+        if not jd_skills_list:
+            skills_str = data.get("skills", "")
+            jd_skills_list = [s.strip() for s in skills_str.split(",") if s.strip()]
+
+        skills_bullet = "\n".join([f"• {s}" for s in jd_skills_list])
+
+        if lang_h:
+            reply = (
+                f"JD se ye skills mili hain, maine resume me add kar di hain:\n\n"
+                f"{skills_bullet}\n\n"
+                f"Koi aur skill add karni hai to likh den.\n"
+                f"Nahi to **skip** likhen."
+            )
+        else:
+            reply = (
+                f"I found these skills from the JD and added them to your resume:\n\n"
+                f"{skills_bullet}\n\n"
+                f"Want to add any more skills? Type them below.\n"
+                f"Otherwise type **skip**."
+            )
+
+        return save_and_reply(reply, chips=["skip"], next_step="extra_skills")
+
+    # ==============================
+    # STEP: EXTRA SKILLS
+    # ==============================
+    if step == "extra_skills":
+
+        jd_skills_list = data.get("jd_analysis", {}).get("skills", [])
+
+        if msg_lower != "skip" and user_message.strip():
+            extra      = [s.strip() for s in
+                          user_message.replace(",", "\n").split("\n")
+                          if s.strip()]
+            all_skills = jd_skills_list + extra
+        else:
+            all_skills = jd_skills_list
+
+        boost_prompt = f"""
+Job role: {data.get("job_role","")}
+Current skills: {", ".join(all_skills)}
+
+Add 2-3 more relevant ATS-friendly skills for this role.
+Return ONLY a comma-separated list of the NEW skills to add.
+No explanation. No numbering.
+"""
+        boost_res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Return only comma-separated skills."},
+                {"role": "user",   "content": boost_prompt}
+            ]
+        )
+        extra_gpt  = [s.strip() for s in
+                      boost_res.choices[0].message.content.strip().split(",")
+                      if s.strip()]
+
+        final_skills   = all_skills + extra_gpt
+        data["skills"] = ", ".join(final_skills)
+
+        if lang_h:
+            reply = (
+                "Bas ek step aur! 🎉\n\n"
+                "Resume banane se pehle kuch extra add karna hai?\n\n"
+                "• Achievement → \"Coding competition jeeta\"\n"
+                "• Hobbies     → \"Cricket, Chess\"\n"
+                "• Links       → \"linkedin.com/in/rahul\"\n"
+                "• Certificate → \"AWS Certified Developer\"\n\n"
+                "Ya likhein: **skip**"
+            )
+        else:
+            reply = (
+                "Almost done! 🎉\n\n"
+                "Anything extra to add before I generate your resume?\n\n"
+                "• Achievement → \"Won coding competition\"\n"
+                "• Hobbies     → \"Cricket, Chess\"\n"
+                "• Links       → \"linkedin.com/in/rahul\"\n"
+                "• Certificate → \"AWS Certified Developer\"\n\n"
+                "Or type: **skip**"
+            )
+
+        return save_and_reply(reply, chips=["skip"], next_step="extra_notes")
+
+    # ==============================
+    # STEP: EXTRA NOTES → GENERATE
+    # ==============================
+    if step == "extra_notes":
+
+        if msg_lower != "skip":
+            data["extra_notes"] = user_message
+
+        jd_analysis         = data.get("jd_analysis", {})
+        jd_skills           = data.get("skills", "")
+        jd_summary_hint     = jd_analysis.get("summary_hint", "")
+        jd_responsibilities = "\n".join(jd_analysis.get("responsibilities", []))
+        jd_title            = jd_analysis.get("job_title", "")
+
+        prompt = f"""
+Generate a Europass ATS Professional Resume.
+This resume MUST score 90+ on ATS for this specific job.
+
+JOB CONTEXT:
+- Job Title: {jd_title}
+- Required Skills: {jd_skills}
+- Key Responsibilities: {jd_responsibilities}
+- ATS Summary Hint: {jd_summary_hint}
+- Complete JD Text: {data.get("jd_text", "")}
+
+CANDIDATE DATA:
+Name: {data.get("full_name","")}
+Address: {data.get("address","")}
+Email: {data.get("email","")}
+Phone: {data.get("phone","")}
+Experience Type: {data.get("experience_type","")}
+Total Experience: {data.get("total_exp","")}
+Companies: {data.get("companies",[])}
+Education: {data.get("education","")}
+College: {data.get("college","")}
+Year: {data.get("completion_year","")}
+Languages: {data.get("languages","")}
+Extra Notes: {data.get("extra_notes","")}
+
+MANDATORY NUMBERED FORMAT — follow EXACTLY:
+
+1. Name
+[full name]
+
+2. Contact Information
+Address: [address]
+Phone: [phone]
+Email: [email]
+
+3. Skills
+[Read the COMPLETE JD text word by word — every line, every bullet point]
+[Extract EVERY possible ATS keyword without missing any]
+[This includes: languages, frameworks, databases, tools, cloud platforms, methodologies, soft skills, equipment, processes, certifications — anything that is a skill]
+[Works for ALL job types: Software Developer, Driver, Cook, Welder, Doctor, Teacher, Accountant, Manager — every field]
+[Group ALL extracted keywords into smart categories relevant to the job]
+[Format STRICTLY: Category Name: skill1, skill2, skill3, skill4]
+[Pack multiple related skills in ONE category line — keep each line compact]
+[Use as many categories as needed to cover ALL keywords — do not skip any]
+[NEVER write descriptions or sentences after skill names]
+[NEVER write only skill name alone on a line without a category]
+[NEVER miss any keyword from JD]
+
+4. Languages
+[Write languages from candidate data]
+[NEVER leave empty]
+[Format: Hindi, English]
+
+5. Professional Summary
+[JD keywords + candidate experience — 5-6 lines minimum]
+[Mention job title, years of experience, company names]
+
+6. Education
+[degree]
+[college]
+[year]
+
+7. Work Experience
+[Each company separately with JD-matching responsibilities]
+[If fresher: write relevant academic projects or internships]
+
+WORK EXPERIENCE FORMAT — STRICTLY FOLLOW:
+Company Name — Job Title
+Duration
+- Responsibility 1
+- Responsibility 2
+
+NEVER number companies like "1. Google" or "2. TCS"
+NEVER write "(2023-2025)" in brackets after company name
+Use ONLY this format:
+Google — Software Developer
+2023 - 2025
+- Wrote clean, testable code...
+
+8. Certifications
+[Use ONLY what user provided in extra notes]
+[If nothing provided: write exactly: "Please add your certifications here"]
+[NEVER invent or assume any certificate]
+
+9. Projects
+[If job role is technical/IT/software/engineering:
+ Use only projects user mentioned in extra notes
+ If none provided: write "Please add your projects here"]
+[If job role is non-technical like Driver/Cleaner/Welder/Cook/Helper/Guard/
+ Electrician/Plumber/Mason/Delivery/Housekeeping/Mechanic/Labour:
+ Write "Not applicable for this role"]
+[If Management/Doctor/Teacher/Accountant/HR:
+ Use only what user mentioned
+ If none: write "Please add relevant projects or achievements here"]
+[NEVER invent or assume any project]
+
+EXTRA NOTES SMART EXTRACTION — VERY IMPORTANT:
+Read extra_notes carefully and place in correct section:
+
+If user mentions "certificate" or "certified" or "course":
+→ Put in section 8. Certifications ONLY
+
+If user mentions "achievement" or "award" or "medal" or "won" or "jeeta" or "prize":
+→ Create section: 10. Achievements
+→ NEVER put achievements in Certifications
+
+If user mentions "hobby" or "hobbies" or "I like" or "interest":
+→ Create section: 11. Hobbies
+→ List as bullets
+
+If user mentions "linkedin" or "portfolio" or "github" or "website":
+→ Create section: 12. Links
+→ List as bullets
+
+THESE ARE SEPARATE SECTIONS — NEVER MIX THEM.
+- Hobbies → section 11 (sidebar me jayega template me)
+- Links → section 12 (sidebar me jayega template me)
+- Achievements → section 10 (right side me jayega)
+- Certificate → section 8 only
+- NEVER mix achievements with certifications
+
+STRICT RULES:
+- Every section MUST start with its number and dot
+- Skills MUST contain JD keywords
+- Work experience responsibilities MUST use JD language
+- Never skip numbering
+- Return ONLY resume text, nothing else
+"""
+
+        res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": """You are a Europass ATS Resume Expert targeting 90+ ATS score.
+        CRITICAL RULES:
+        - NEVER use markdown formatting like **bold** or *italic* — plain text only
+        - Use EXACT keywords from job description in skills, summary and experience
+        - Repeat important JD keywords naturally multiple times
+        - Skills must mirror JD language exactly
+        - Summary must contain at least 5 JD keywords
+        - Work experience bullets must use JD exact phrases
+        - Always use numbered format 1. 2. 3. etc.
+        - Return resume text only"""},
+                {"role": "user",   "content": prompt}
+            ]
+        )
+
+        final_resume = res.choices[0].message.content
+        final_resume = re.sub(r"-{3,}", "", final_resume)
+        final_resume = re.sub(r"_{3,}", "", final_resume)
+        final_resume = re.sub(r"\*\*(.*?)\*\*", r"\1", final_resume)
+        final_resume = re.sub(r"\*(.*?)\*", r"\1", final_resume)
+
+        data["final_resume"]   = final_resume
+        session["jd_step"]     = "jd_done"
+        session["resume_data"] = data
+        session["jd_data"]     = data
+        session.modified       = True
+
+        if lang_h:
+            instruction = (
+                "\n\n--------------------\n"
+                "✅ Aapka JD-optimized resume ready hai!\n\n"
+                "✏️ **Kuch badalna ho to bas likhein:**\n"
+                "→ \"Summary ko aur lamba karo\"\n"
+                "→ \"Achievement add karo: Team lead tha\"\n"
+                "→ \"Hobbies add karo: Cricket\"\n"
+                "→ \"Naya section: Notice Period - 30 din\"\n\n"
+                "🎨 Ya **Template** button click karein download ke liye."
+            )
+        else:
+            instruction = (
+                "\n\n--------------------\n"
+                "✅ Your JD-optimized resume is ready!\n\n"
+                "✏️ **Want to edit? Just tell me:**\n"
+                "→ \"Make summary longer\"\n"
+                "→ \"Add Achievement: Led team of 5\"\n"
+                "→ \"Add Hobbies: Cricket\"\n"
+                "→ \"Add new section: Notice Period - 30 days\"\n\n"
+                "🎨 Or click **Template** button to download."
+            )
+
+        final_resume += instruction
+        data["final_resume"]   = final_resume
+        session["resume_data"] = data
+        session["jd_data"]     = data
+
+        return jsonify({
+            "reply"     : final_resume,
+            "generating": True,
+            "step"      : "jd_done"
+        })
+
+    # ==============================
+    # EDIT MODE
+    # ==============================
+    if step == "jd_done":
+
+        old_resume = data.get("final_resume","").split("--------------------")[0].strip()
+
+        edit_prompt = f"""
+You are a Resume Editor AI.
+
+Current resume:
+{old_resume}
+
+User requested: "{user_message}"
+
+STRICT RULES:
+- Sections 1-9 keep SAME numbers always
+- New sections start from 10 onward
+- Return FULL updated resume
+- Apply ONLY the requested change
+- Keep all other content exactly same
+- Maintain numbered format strictly
+"""
+
+        res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a Resume Editor AI. Return full updated resume only."},
+                {"role": "user",   "content": edit_prompt}
+            ]
+        )
+
+        updated = res.choices[0].message.content
+        updated = re.sub(r"-{3,}", "", updated)
+        updated = re.sub(r"_{3,}", "", updated)
+        updated = re.sub(r"\*\*(.*?)\*\*", r"\1", updated)
+        updated = re.sub(r"\*(.*?)\*", r"\1", updated)
+
+        if lang_h:
+            instruction = (
+                "\n\n--------------------\n"
+                "✅ Resume update ho gaya!\n\n"
+                "✏️ **Aur changes chahiye to likhein.**\n"
+                "🎨 Ya **Template** button click karein."
+            )
+        else:
+            instruction = (
+                "\n\n--------------------\n"
+                "✅ Resume updated!\n\n"
+                "✏️ **Need more changes? Just tell me.**\n"
+                "🎨 Or click **Template** button to download."
+            )
+
+        updated += instruction
+        data["final_resume"]   = updated
+        session["resume_data"] = data
+        session["jd_data"]     = data
+
+        return jsonify({"reply": updated})
+
+    return jsonify({"reply": "Something went wrong. Please try again."})
+
+# ==============================
+# JD SESSION HELPERS
+# ==============================
+@app.route("/reset-jd-session", methods=["POST"])
+def reset_jd_session():
+    session.pop("jd_step",      None)
+    session.pop("jd_data",      None)
+    session.pop("resume_data",  None)
+    return {"status": "reset_done"}
+
+
+@app.route("/check-jd-resume")
+def check_jd_resume():
+    data = session.get("jd_data", {})
+    return {"ready": bool(data.get("final_resume"))}
 
 if __name__ == "__main__":
 
