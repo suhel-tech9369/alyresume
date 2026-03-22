@@ -4,13 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <!-- 🔥 SEO TITLE -->
   <title>Free AI Resume Builder Chat - Create ATS Friendly Resume Online | AlyResume</title>
 
-  <!-- 🔥 SEO DESCRIPTION -->
   <meta name="description" content="Create your resume online for free using AI chat. Resume kaise banaye? Build ATS-friendly professional resume in minutes. CV banane wala free tool India. Edit, customize and download instantly. No signup required.">
 
-  <!-- 🔥 KEYWORDS -->
   <meta name="keywords" content="
   free resume builder chat,
   AI resume builder,
@@ -31,123 +28,93 @@
   freshers resume kaise banaye
   ">
 
-  <!-- 🔥 INDEXING -->
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow">
-
-  <!-- 🔥 AUTHOR -->
   <meta name="author" content="AlyResume">
-
-  <!-- 🔥 LANGUAGE + SEO BOOST -->
   <meta name="language" content="English, Hindi">
   <meta name="revisit-after" content="2 days">
 
-  <!-- 🔥 OPEN GRAPH -->
   <meta property="og:title" content="Free AI Resume Builder Chat">
   <meta property="og:description" content="AI chat se resume banaye free. ATS-friendly resume in minutes. No signup required. Instant download.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://alyresume.com/static/logo.png">
   <meta property="og:url" content="https://alyresume.com/chat">
 
-  <!-- 🔥 EXTRA SOCIAL (Twitter) -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Free AI Resume Builder Chat">
   <meta name="twitter:description" content="Create resume using AI chat free. ATS-friendly CV builder India.">
   <meta name="twitter:image" content="https://alyresume.com/static/logo.png">
 
-  <!-- 🔥 ICON -->
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
-
   <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
 </head>
 
 <body>
 
-<div class="shooting-star one"></div>
-<div class="shooting-star two"></div>
-<div class="shooting-star three"></div>
-
+<!-- ===== CHAT SCREEN ===== -->
 <div class="chat-container">
 
   <!-- Header -->
   <div class="chat-header">
-
-  <span>💬 Resume Chat Assistant     .</span>
-  </br>
-  </br><button id="newResumeBtn" 
-style="margin-bottom:10px; padding:8px 15px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer;">
-🔄 Start New Resume
-</button>
-
-  <!-- 🎨 Template Icon Button -->
-  <button id="templateBtn" class="template-icon">
-    🎨<br>
-	choose template
-  </button>
-
-</div>
-  <!-- Chat Messages -->
-  <div class="chat-box" id="chatBox">
-
-    <!-- First AI Message -->
-    
-
+    <div class="header-left">
+      <span class="header-title">💬 Resume Chat Assistant</span>
+      <span class="step-badge" id="stepBadge">Step 1/10</span>
+    </div>
+    <div class="header-right">
+      <button id="templateBtn" class="template-header-btn">🎨 Template</button>
+      <button id="newResumeBtn" class="new-btn">🔄 New</button>
+    </div>
   </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressFill" style="width:10%"></div>
+  </div>
+
+  <!-- Chat Messages -->
+  <div class="chat-box" id="chatBox"></div>
 
   <!-- Input -->
   <div class="chat-input">
-    <input id="user-input" type="text" placeholder="Type your message..." />
-	
+    <input id="user-input" type="text" placeholder="Type your answer..." autocomplete="off"/>
     <button id="send-btn">Send</button>
   </div>
-<!-- =============================== -->
-<!-- 🎨 TEMPLATE SELECT POPUP -->
-<!-- =============================== -->
-<!-- =============================== -->
-<!-- 🎨 TEMPLATE SELECT POPUP -->
-<!-- =============================== -->
-<div id="templatePopup" class="template-popup">
 
+</div>
+
+<!-- ===== TEMPLATE POPUP ===== -->
+<div id="templatePopup" class="template-popup">
   <div class="popup-box">
+
     <h3>Select Resume Template</h3>
-<!-- Close -->
-    <button id="closeTemplate" class="close-btn">
-      Close
-    </button>
-    <!-- ✅ Resume Templates -->
+
     <div class="template-grid">
 
-  <div class="template-card" data-template="1">
-    <img src="{{ url_for('static', filename='template1.jpg') }}">
-    <p>Template 1</p>
-	<span style="background:#10b981; color:white; padding:3px 10px;
-	border-radius:20px; font-size:13px; font-weight:bold;">₹Free</span>
-  </div>
+      <div class="template-card" data-template="1">
+        <img src="{{ url_for('static', filename='template1.jpg') }}" alt="Template 1">
+        <p>Template 1</p>
+        <span class="price-tag green">Free</span>
+      </div>
 
-  <div class="template-card" data-template="2">
-    <img src="{{ url_for('static', filename='template2.jpg') }}">
-    <p>Template 2</p>
-	<span style="background:#3b82f6; color:white; padding:3px 10px;
-	border-radius:20px; font-size:13px; font-weight:bold;">₹49</span>
-  </div>
+      <div class="template-card" data-template="2">
+        <img src="{{ url_for('static', filename='template2.jpg') }}" alt="Template 2">
+        <p>Template 2</p>
+        <span class="price-tag blue">₹49</span>
+      </div>
 
-  <div class="template-card" data-template="3">
-    <img src="{{ url_for('static', filename='template3.jpg') }}">
-    <p>Template 3</p>
-	<span style="background:#3b82f6; color:white; padding:3px 10px; 
-	border-radius:20px; font-size:13px; font-weight:bold;">₹49</span>
-  </div>
+      <div class="template-card" data-template="3">
+        <img src="{{ url_for('static', filename='template3.jpg') }}" alt="Template 3">
+        <p>Template 3</p>
+        <span class="price-tag blue">₹49</span>
+      </div>
 
+    </div>
+
+    <button id="closeTemplate" class="close-btn">Close</button>
+
+  </div>
 </div>
 
-    
-  </div>
-
-</div>
-</div>
-
-<!-- JS -->
 <script src="{{ url_for('static', filename='chat.js') }}"></script>
-
 </body>
 </html>

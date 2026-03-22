@@ -207,8 +207,7 @@ def photo_rule(country, lang):
 # Ask Question in User Language
 # ===============================
 def ask_in_language(lang, question):
-
-    if lang.strip().lower().startswith("e"):
+    if not lang or lang.strip().lower().startswith("e"):
         return question
 
     prompt = f"""
@@ -278,8 +277,12 @@ def chat():
 
     return render_template("chat.html")
 
+# API Chat Endpoint — UPDATED
+# Returns: step, chips, example (same as JD version)
 # ===============================
-# API Chat Endpoint
+# ===============================
+# API Chat Endpoint — FINAL
+# No ask_in_language — direct Hindi/English
 # ===============================
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
@@ -287,50 +290,84 @@ def api_chat():
 
     step = session.get("step", "language")
     data = session.get("resume_data", {})
-
     msg_lower = user_message.lower()
 
+    def reply(msg, next_step=None, chips=None, example=None, generating=False):
+        session["resume_data"] = data
+        session.modified = True
+        if next_step:
+            session["step"] = next_step
+        resp = {"reply": msg}
+        if next_step:  resp["step"]      = next_step
+        if chips:      resp["chips"]     = chips
+        if example:    resp["example"]   = example
+        if generating: resp["generating"] = True
+        return jsonify(resp)
+
+    # ===============================
+    # START
+    # ===============================
     if user_message == "__start__":
         session["step"] = "language"
-        session["resume_data"] = {}
-        return jsonify({"reply": "👋 Which language do you want? (English / Hindi)"})
+        session["resume_data"] = {
+            "language": None, "apply_country": None, "current_country": None,
+            "job_role": None, "experience_type": None, "full_name": None,
+            "address": None, "email": None, "phone": None, "total_exp": None,
+            "companies": [], "education": None, "college": None,
+            "completion_year": None, "languages": None, "skills": None,
+            "projects": None, "extra_notes": None, "final_resume": None,
+            "resume_json": None
+        }
+        return jsonify({
+            "reply": "👋 Welcome to Resume Chat!\n\nApni chat language chunein:\n• English — Chat in English\n• Hindi — Chat in Hindi+English\n\n(Resume hamesha English me banega)",
+            "step":  "language",
+            "chips": ["English", "Hindi"]
+        })
 
+    lang_h = (data.get("language") or "").lower().startswith("h")
 
     # ===============================
     # STEP 1: Language
     # ===============================
     if step == "language":
         data["language"] = user_message
-        session["step"] = "country"
+        lang_h = user_message.lower().startswith("h")
 
-        q = """Great! Which country are you applying for?
-Example: India / Germany / UAE"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aap kis country ke liye apply kar rahe hain?"
+        else:
+            q = "Which country are you applying for?"
 
-    # STEP 2: Apply Country
+        return reply(q, next_step="country",
+                     example="India / Germany / UAE / USA")
+
+    # ===============================
+    # STEP 2: Country
     # ===============================
     if step == "country":
         data["apply_country"] = user_message
-        session["step"] = "job_role"
 
-        q = """What job role are you applying for?
-        Example: Software Developer / Electrician / Accountant"""
+        if lang_h:
+            q = "Aap kis job role ke liye apply kar rahe hain?"
+        else:
+            q = "What job role are you applying for?"
 
-        return jsonify({
-            "reply": ask_in_language(data["language"], q)
-        })
+        return reply(q, next_step="job_role",
+                     example="Software Developer / Electrician / Accountant")
 
     # ===============================
     # STEP 3: Job Role
     # ===============================
     if step == "job_role":
         data["job_role"] = user_message
-        session["step"] = "experience_type"
 
-        q = """Are you fresher or experienced?
-        Example: fresher / experienced"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aap fresher hain ya experienced?"
+        else:
+            q = "Are you fresher or experienced?"
 
+        return reply(q, next_step="experience_type",
+                     chips=["fresher", "experienced"])
 
     # ===============================
     # STEP 4: Experience Type
@@ -340,206 +377,238 @@ Example: India / Germany / UAE"""
 
         if "exp" in data["experience_type"]:
             data["companies"] = []
-            session["step"] = "total_exp"
-            q = """How many years of total experience do you have? (or type: skip)
-            Example: 2 years / 6 months"""
-            return jsonify({"reply": ask_in_language(data["language"], q)})
 
-        session["step"] = "full_name"
-        q = """What is your full name?
-                Example: Thomas """
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+            if lang_h:
+                q = "Aapke paas kitne saal ka total experience hai?"
+            else:
+                q = "How many years of total experience do you have?"
 
+            return reply(q, next_step="total_exp",
+                         chips=["skip"],
+                         example="2 years / 6 months / skip")
+
+        if lang_h:
+            q = "Aapka poora naam kya hai?"
+        else:
+            q = "What is your full name?"
+
+        return reply(q, next_step="full_name",
+                     example="Rahul Sharma / Priya Singh")
 
     # ===============================
     # STEP 4A: Total Experience
     # ===============================
     if step == "total_exp":
+        if user_message.lower() != "skip":
+            data["total_exp"] = user_message
 
-        if user_message.lower() == "skip":
-            session["step"] = "full_name"
-            q = "What is your full name?"
-            return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapne sabse recently kis company mein kaam kiya tha?"
+        else:
+            q = "Which company did you work in most recently?"
 
-        data["total_exp"] = user_message
-        session["step"] = "company_name"
-
-        q = q = """Which company did you work in most recently?
-(type: company name / skip / self / business)
-Example: TCS / Infosys / self"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
-
+        return reply(q, next_step="company_name",
+                     chips=["skip", "self"],
+                     example="TCS / Infosys / self / skip")
 
     # ===============================
-    # STEP 4B: Company Name (SELF-EMPLOYED FIX)
+    # STEP 4B: Company Name
     # ===============================
     if step == "company_name":
-
         if user_message.lower() == "skip":
-            session["step"] = "full_name"
-            q = "What is your full name?"
-            return jsonify({"reply": ask_in_language(data["language"], q)})
+            if lang_h:
+                q = "Aapka poora naam kya hai?"
+            else:
+                q = "What is your full name?"
+            return reply(q, next_step="full_name",
+                         example="Rahul Sharma / Priya Singh")
 
-        if (
-            "khud" in msg_lower
-            or "own" in msg_lower
-            or "self" in msg_lower
-            or "freelance" in msg_lower
-            or "business" in msg_lower
-        ):
+        if any(w in msg_lower for w in ["khud","own","self","freelance","business"]):
             company = {"name": "Self-Employed"}
         else:
             company = {"name": user_message}
 
         data["companies"].append(company)
 
-        session["step"] = "company_duration"
-        q = """In this company, you worked from which year to which year?
-        Example: 2021 - 2023"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = f"Aap {company['name']} mein kis saal se kis saal tak kaam kiya?"
+        else:
+            q = f"In {company['name']}, you worked from which year to which year?"
 
+        return reply(q, next_step="company_duration",
+                     example="2021 - 2023 / Jan 2022 - Mar 2024")
 
     # ===============================
     # STEP 4C: Company Duration
     # ===============================
     if step == "company_duration":
         data["companies"][-1]["duration"] = user_message
-        session["step"] = "add_more_company"
 
-        translated = ask_in_language(data["language"], "Do you want to add another company?")
-        return jsonify({"reply": translated + " (yes/no)"})
+        if lang_h:
+            q = "Kya aap ek aur company add karna chahte hain?"
+        else:
+            q = "Do you want to add another company?"
 
+        return reply(q, next_step="add_more_company",
+                     chips=["yes", "no"])
 
     # ===============================
     # STEP 4D: Add More Company
     # ===============================
     if step == "add_more_company":
         answer = strict_yes_no(user_message)
-
         if answer is None:
-            return jsonify({"reply": "⚠ Please answer only: yes or no"})
+            return jsonify({
+                "reply": "⚠ Sirf yes ya no likhein" if lang_h else "⚠ Please answer only: yes or no",
+                "chips": ["yes", "no"]
+            })
 
         if answer == "yes":
-            session["step"] = "company_name"
-            q = "Next company name?"
-            return jsonify({"reply": ask_in_language(data["language"], q)})
+            if lang_h:
+                q = "Agli company ka naam batayein?"
+            else:
+                q = "Next company name?"
+            return reply(q, next_step="company_name",
+                         chips=["skip", "self"],
+                         example="Wipro / HCL / self")
 
-        session["step"] = "full_name"
-        q = """What is your full name?
-        Example: Thomas """
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapka poora naam kya hai?"
+        else:
+            q = "What is your full name?"
 
+        return reply(q, next_step="full_name",
+                     example="Rahul Sharma / Priya Singh")
 
     # ===============================
     # STEP 5: Name
     # ===============================
     if step == "full_name":
         data["full_name"] = clean_text(user_message)
-        session["step"] = "address"
 
-        q = """What is your full address?
-        Example: Lucknow, Uttar Pradesh, India"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapka poora address kya hai?"
+        else:
+            q = "What is your full address?"
 
+        return reply(q, next_step="address",
+                     example="Lucknow, Uttar Pradesh, India")
 
     # ===============================
     # STEP 6: Address
     # ===============================
     if step == "address":
         data["address"] = user_message
-
         if "india" in user_message.lower():
             data["current_country"] = "India"
 
-        session["step"] = "email"
-        q = """Email address?
-        Example: aly123@gmail.com"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapka email address kya hai?"
+        else:
+            q = "What is your email address?"
 
+        return reply(q, next_step="email",
+                     example="rahul123@gmail.com")
 
     # ===============================
     # STEP 7: Email
     # ===============================
     if step == "email":
-
         if not is_valid_email(user_message):
-            return jsonify({"reply": "⚠ Please enter a valid email address (example: name@gmail.com)"})
+            return jsonify({
+                "reply":   "⚠ Sahi email dalein." if lang_h else "⚠ Please enter a valid email.",
+                "step":    "email",
+                "example": "name@gmail.com"
+            })
 
         data["email"] = user_message
-        session["step"] = "phone"
         session["resume_data"] = data
 
-        q = """Phone number?
-        Example: +91 9876543210"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapka phone number kya hai?"
+        else:
+            q = "What is your phone number?"
 
+        return reply(q, next_step="phone",
+                     example="+91 9876543210")
 
     # ===============================
-    # STEP 8: Phone → Education
+    # STEP 8: Phone
     # ===============================
     if step == "phone":
         data["phone"] = user_message
-        session["step"] = "education"
         session["resume_data"] = data
 
-        q = """What is your highest qualification or degree?
-        Example: B.Tech in Computer Science"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapki sabse badi degree ya qualification kya hai?"
+        else:
+            q = "What is your highest qualification or degree?"
 
+        return reply(q, next_step="education",
+                     example="B.Tech in Computer Science / MBA / 12th Pass")
 
     # ===============================
     # STEP 9: Education
     # ===============================
     if step == "education":
         data["education"] = user_message
-        session["step"] = "college"
 
-        q = """Which college/university did you study in?
-        Example: Delhi University"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapne kis college ya university mein padhai ki?"
+        else:
+            q = "Which college or university did you study in?"
 
+        return reply(q, next_step="college",
+                     example="Delhi University / IIT Bombay / AKTU")
 
     # ===============================
     # STEP 10: College
     # ===============================
     if step == "college":
         data["college"] = user_message
-        session["step"] = "completion_year"
 
-        q = """What is your completion year?
-        Example: 2023"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapka graduation year kya tha?"
+        else:
+            q = "What is your completion year?"
 
+        return reply(q, next_step="completion_year",
+                     chips=["Pursuing"],
+                     example="2021 / 2023 / Pursuing")
 
     # ===============================
-    # STEP 11: Completion Year → Languages
+    # STEP 11: Completion Year
     # ===============================
     if step == "completion_year":
         data["completion_year"] = user_message
-        session["step"] = "languages"
 
-        q = """Which languages do you know?
-        Example: Hindi, English"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aap kaun kaun si languages jaante hain?"
+        else:
+            q = "Which languages do you know?"
 
+        return reply(q, next_step="languages",
+                     example="Hindi, English / English, French")
 
     # ===============================
     # STEP 12: Languages
     # ===============================
     if step == "languages":
         data["languages"] = user_message
-        session["step"] = "skills"
 
-        q = """Do you know your skills or should I generate ATS-friendly skills? (type: generate)
-        Example: Python, HTML, CSS OR type: generate"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        if lang_h:
+            q = "Aapki skills batayein, ya main job role ke hisaab se generate kar dun? (generate likhein)"
+        else:
+            q = "Tell me your skills, or should I generate ATS-friendly skills? (type: generate)"
 
+        return reply(q, next_step="skills",
+                     chips=["generate"],
+                     example="Python, HTML, CSS / ya likhein: generate")
 
     # ===============================
     # STEP 13: Skills
     # ===============================
     if step == "skills":
-
         if "generate" in msg_lower:
             skill_prompt = f"Generate ATS-friendly skills for job role: {data['job_role']}"
             res = client.chat.completions.create(
@@ -550,56 +619,57 @@ Example: TCS / Infosys / self"""
         else:
             data["skills"] = user_message
 
-        session["step"] = "extra_custom"
+        if lang_h:
+            q = "Kya aapke paas koi certificate ya course hai?\n\nExample: AWS Certified Developer / Python course Coursera se\n\nNahi hai to skip likhein."
+        else:
+            q = "Do you have any certifications or courses?\n\nExample: AWS Certified Developer / Python course from Coursera\n\nType skip if none."
 
-        q = """Any extra notes? (Certificate, Availability)
-        Example: Completed Python course from Coursera"""
-        return jsonify({"reply": ask_in_language(data["language"], q)})
+        return reply(q, next_step="extra_custom",
+                     chips=["skip"],
+                     example="AWS Certificate / Python course / skip")
 
     # ===============================
-    # STEP: EXTRA CUSTOM INPUT
+    # STEP: Extra Custom (Certificate)
     # ===============================
     if step == "extra_custom":
-
         data["extra_custom"] = user_message
-        session["step"] = "extra_notes"
 
-        if data["language"].lower().startswith("h"):
+        if lang_h:
             q = """Kya aap kuch aur add karna chahte hain?
 
-    Aap add kar sakte hain:
-    - Achievement
-    - Project
-    - Hobbies (sidebar me jayega)
-    - Links (LinkedIn, Portfolio)
+Aap in mein se kuch bhi add kar sakte hain:
+- Achievement (jaise award mila, competition jita)
+- Project (jaise koi app banaya, website banai)
+- Hobbies (aapki pasand)
+- Links (LinkedIn, GitHub, Portfolio)
 
-    Example:
-    "Achievements add karo: Coding competition jeeta"
-    "Hobbies add karo: Cricket"
-    "Links add karo: linkedin.com/xyz"
-    👉 Iske alawa jo bhi aap add karna chahte hain, seedha message me likh dein.
-Main khud samajh kar use sahi section me daal dunga.
+Example:
+"Achievement: District level cricket tournament jita"
+"Hobbies: Football, Photography"
+"Links: linkedin.com/in/rahul"
 
-    Skip likh sakte hain."""
+Ya seedha likh dein jo add karna ho.
+Skip likhein agar kuch nahi add karna."""
         else:
             q = """Do you want to add anything else?
 
-    You can add:
-    - Achievements
-    - Projects
-    - Hobbies (sidebar)
-    - Links (LinkedIn, Portfolio)
+You can add any of these:
+- Achievement (award received, competition won)
+- Project (app built, website created)
+- Hobbies (your interests)
+- Links (LinkedIn, GitHub, Portfolio)
 
-    Example:
-    "Add Achievements: Won competition"
-    "Add Hobbies: Cricket"
-    "Add Links: linkedin.com/xyz"
-    👉 You can also type anything else you want to add.
-I will automatically understand and place it in the correct section.
+Example:
+"Achievement: Won district level cricket tournament"
+"Hobbies: Football, Photography"
+"Links: linkedin.com/in/rahul"
 
-    Type 'skip' to continue."""
+Or just type whatever you want to add.
+Type skip if nothing to add."""
 
-        return jsonify({"reply": q})
+        return reply(q, next_step="extra_notes",
+                     chips=["skip"],
+                     example="Achievement: Won prize / Hobbies: Cricket / skip")
 
     # ===============================
     # STEP 14: Resume Generate
@@ -615,250 +685,74 @@ I will automatically understand and place it in the correct section.
 
         Use EXACT numbering + formatting below.
 
-        --------------------------------------------------
-
         FIXED SECTIONS (Never change numbers)
 
         1. Name
-
         Write full name only under heading.
-        Heading MUST always appear.
-        Never skip this heading.
-
-        Example:
-        1. Name
-        Suhel
-
-        --------------------------------------------------
 
         2. Contact Information
-
-        Write in this format only:
-
         Address: ___
         Phone: ___
         Email: ___
 
-        Do NOT merge into one line.
-        Do NOT change order.
-
-        --------------------------------------------------
-
         3. Skills
-
-        Rules:
-
         • Use bullet points only.
         • Never number skills.
         • Summarize skills into 5–6 main lines.
         • Categorize if technical role.
         • Keep ATS-friendly keywords.
 
-        Example:
-
-        • Programming Languages: Java, Python, C++
-        • Web Development: HTML, CSS, JavaScript
-        • Database Management: SQL, MySQL
-        • Tools: Git, Docker
-        • Soft Skills: Communication, Teamwork
-
-        --------------------------------------------------
-
         4. Languages
-
-        Write like:
-
         • Hindi (Native)
         • English (Fluent)
 
-        --------------------------------------------------
-
         5. Professional Summary
-
-        Write in paragraph format.
-        Strong ATS Europass tone.
-
-        IMPORTANT ADDITIONAL RULES:
-
+        Write in paragraph format. Strong ATS Europass tone.
         • Mention total years of experience if provided.
         • Mention company names if user worked in companies.
         • Mention job role.
         • Highlight technical strengths.
         • Minimum 4–6 lines summary.
 
-        Example tone:
-
-        “Software Engineer with 5 years of experience working at Google and Microsoft…”
-
-        --------------------------------------------------
-
         6. Education
-
-        Write in this format:
-
-        Degree  
-        Institution  
-        Completion Year  
-
-        STRICT EDUCATION RULES:
-
-        • Do NOT compress into one line.
-        • Do NOT bullet education.
-        • Maintain vertical Europass format.
-        • Degree must appear first.
-        • Institution second.
-        • Year third.
-        • Use full university name if provided.
-        • Do NOT shorten institution names.
-
-        --------------------------------------------------
+        Degree
+        Institution
+        Completion Year
 
         7. Work Experience
-
         If fresher → write professionally.
-
-        If experienced → follow STRICT rules:
-
-        WORK EXPERIENCE RULES:
-
+        If experienced → STRICT rules:
         • Show EACH company separately.
         • Company name MUST appear.
         • Duration MUST appear.
         • Role MUST appear.
         • Add 2–3 responsibility points.
-        • Use bullet points for responsibilities.
 
-        FORMAT EXAMPLE:
-
-        Software Engineer — Google  
-        2022 – 2025  
-
-        • Developed scalable applications  
-        • Worked on cloud systems  
-
-        Software Engineer — Microsoft  
-        2020 – 2022  
-
-        • Built enterprise software  
-        • Improved performance  
-
-        Do NOT merge multiple companies into one paragraph.
-
-        --------------------------------------------------
+        FORMAT:
+        Software Engineer — Google
+        2022 – 2025
+        • Developed scalable applications
+        • Worked on cloud systems
 
         8. Certifications
-
-        Rules:
-
         • Write only user-provided certificates.
-        • If user gave certificate in extra notes → move here.
-        • Never place certificates in extra notes.
         • If none → write placeholder.
 
-        CERTIFICATION EXPANSION RULE:
-
-        • Expand certificate slightly if possible.
-        • Mention issuing body if known.
-        • Example:
-
-        O Level Certificate — NIELIT
-
-        If body unknown → keep professional format.
-
-        --------------------------------------------------
-
         9. Projects
-
         If none → write placeholder.
-
         If provided → bullet format.
 
-        --------------------------------------------------
+        DYNAMIC SECTIONS RULE:
+        If user provides Achievements, Awards, Availability,
+        Hobbies, Links → Create NEW numbered sections from 10 onward.
 
-        10. (Reserved for future dynamic sections)
-
-Do NOT generate References section
-unless user specifically provides it.
-        --------------------------------------------------
-
-        DYNAMIC SECTIONS RULE
-
-        If user provides any extra info like:
-
-        • Achievements  
-        • Awards  
-        • Availability  
-        • Visa Status  
-        • Notice Period  
-        • Volunteer Work  
-        • Publications  
-
-        Create NEW numbered sections starting from 10 onward.
-
-        Example:
-
-        10. Achievements  
-        11. Availability  
-
-        Do NOT create “Extra Notes” heading.
-
-        --------------------------------------------------
-
-        NUMBER STABILITY RULE (VERY IMPORTANT)
-
-        • Fixed sections 1–10 must ALWAYS keep same numbers.
-        • Never renumber them.
-        • Even if content removed → number stays reserved.
-
-        Example:
-
-        If Certifications removed:
-
-        8. Certifications  
-        (Removed as per user request)
-
-        Do NOT shift Projects to 8.
-
-        --------------------------------------------------
-
-        EDIT SAFETY RULE
-
-        If user later edits resume:
-
-        • Remove section → keep number + heading.
-        • Update section → update only that section.
-        • Add new info → create new number 11+.
-        • Never disturb other sections.
-
-        --------------------------------------------------
-
-        STRICT RULES
-
-        • Never merge sections.
-        • Never skip numbering.
-        • Never renumber after deletion.
-        • Never convert bullets into numbers.
-        • Follow Europass ATS format.
-        • Follow user answers exactly.
-        
         SMART EXTRACTION RULE:
-
-        • If user writes "hobby" or "I like" → treat as Hobbies
-        • If user writes "linkedin" or "portfolio" → treat as Links
-        • BUT if link is related to project → keep it inside Projects
-        
-        Examples:
-        - "I like cricket" → Hobbies
-        - "linkedin.com/xyz" → Links
-        - "Project: made website (github link)" → Project (NOT links)
-        
-        FINAL RULE:
-        • Hobbies → sidebar
-        • Links → sidebar
+        • "hobby" or "I like" → Hobbies section
+        • "linkedin" or "portfolio" → Links section
         • Project links → inside Projects section
-        • बाकी सब → new section (right side)
 
-        --------------------------------------------------
+        Do NOT generate References section.
+
         Extra Custom Instructions:
         {data.get("extra_custom","")}
 
@@ -872,7 +766,7 @@ unless user specifically provides it.
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a Europass ATS Resume Expert."},
-                {"role": "user", "content": prompt}
+                {"role": "user",   "content": prompt}
             ]
         )
 
@@ -881,10 +775,7 @@ unless user specifically provides it.
         final_resume = re.sub(r"_{3,}", "", final_resume)
         data["final_resume"] = final_resume
 
-
-        # ==================================================
-        # ✅ FIXED JSON CONVERTER (RESPONSIBILITIES INCLUDED)
-        # ==================================================
+        # JSON conversion
         json_prompt = f"""
         Convert this NUMBERED resume into JSON.
 
@@ -892,7 +783,6 @@ unless user specifically provides it.
         {final_resume}
 
         Number Mapping:
-
         1 → name
         2 → contact
         3 → skills
@@ -903,7 +793,6 @@ unless user specifically provides it.
         10+ → extra_sections
 
         JSON Format:
-
         {{
          "name":"",
          "contact":{{"email":"","phone":"","address":""}},
@@ -912,12 +801,7 @@ unless user specifically provides it.
          "summary":"",
          "education":[],
          "experience":[],
-         "extra_sections":[
-           {{
-             "title":"",
-             "content":[]
-           }}
-         ]
+         "extra_sections":[{{"title":"","content":[]}}]
         }}
 
         Return ONLY JSON.
@@ -927,88 +811,71 @@ unless user specifically provides it.
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Return only JSON."},
-                {"role": "user", "content": json_prompt}
+                {"role": "user",   "content": json_prompt}
             ]
         )
 
         ai_text = json_res.choices[0].message.content.strip()
 
-        # =========================
-        # EMPTY RESPONSE CHECK
-        # =========================
         if not ai_text:
+            return jsonify({"error": "AI response empty. Please retry."}), 500
 
-            return jsonify({
-                "error": "AI response empty. Please retry."
-            }), 500
-
-        # =========================
-        # SAFE JSON PARSE
-        # =========================
         try:
-
             data["resume_json"] = json.loads(ai_text)
         except json.JSONDecodeError:
-            return jsonify({
-                "error": "AI returned invalid JSON. Retry."
-            }), 500
+            return jsonify({"error": "AI returned invalid JSON. Retry."}), 500
 
-        # ✅ Final Professional Instruction Message
-
-        if data["language"].lower().startswith("h"):
+        if lang_h:
             instruction_msg = (
                 "\n\n--------------------\n"
-                "✅ Aapka resume text format me ready hai.\n"
-                "Aap yahan content add ya edit kar sakte hain.\n"
-                "⚠ Agar koi section hatana ho to template select karne ke baad manually remove karein.\n"
-                "Warna 🎨 Template icon par click karke design choose karein."
+                "✅ Aapka resume ready hai!\n\n"
+                "✏️ Kuch badalna ho to bas likhein:\n"
+                "→ \"Summary ko aur lamba karo\"\n"
+                "→ \"Achievement add karo: Team lead tha\"\n"
+                "→ \"Hobbies add karo: Cricket\"\n\n"
+                "🎨 Ya Template button click karein download ke liye."
             )
         else:
             instruction_msg = (
                 "\n\n--------------------\n"
-                "✅ Your resume is ready in text format.\n"
-                "You may edit or add content here.\n"
-                "⚠ If you want to remove any section, please remove it manually after selecting a template.\n"
-                "Otherwise click 🎨 Template icon to select a design."
+                "✅ Your resume is ready!\n\n"
+                "✏️ Want to edit? Just tell me:\n"
+                "→ \"Make summary longer\"\n"
+                "→ \"Add Achievement: Led team of 5\"\n"
+                "→ \"Add Hobbies: Cricket\"\n\n"
+                "🎨 Or click Template button to download."
             )
 
         final_resume += instruction_msg
+        data["final_resume"] = final_resume
         session["resume_data"] = data
+        session.modified = True
 
-        return jsonify({"reply": final_resume, "generating": True})
-
+        return jsonify({
+            "reply":      final_resume,
+            "generating": True,
+            "step":       "done"
+        })
 
     # ===============================
-    # EDIT MODE AFTER RESUME
+    # EDIT MODE
     # ===============================
     if step == "done":
-
         old_resume = data.get("final_resume", "").split("--------------------")[0].strip()
 
         edit_prompt = f"""
         You are a Resume Editor AI.
 
         Here is the current numbered resume:
-
         {old_resume}
 
         User requested this update:
-
         "{user_message}"
 
-        --------------------------------------------------
-
         STRICT NUMBER PROTECTION RULES:
-
-        Sections 1–9 are FIXED.
-
-        NEVER change their numbers.
-        NEVER move them.
-        NEVER merge them.
-        NEVER delete numbering.
+        Sections 1–9 are FIXED. NEVER change their numbers.
 
         Mapping:
-
         1 → Name
         2 → Contact
         3 → Skills
@@ -1019,83 +886,47 @@ unless user specifically provides it.
         8 → Certifications
         9 → Projects
 
-        --------------------------------------------------
-
-        EDIT RULES:
-
-        • If user adds a NEW heading → create NEW section.
-        • Always place NEW section AFTER section 9.
-        • Start numbering from 10 onward.
-        • Do NOT insert new data inside existing sections.
-        • Do NOT replace Projects.
-        • Do NOT shift Summary.
-        • Do NOT cut any section content.
-
-        --------------------------------------------------
-
-        DYNAMIC SECTION RULE:
-
-        Examples of new headings:
-
-        • Achievements
-        • Awards
-        • Availability
-        • Visa Status
-        • Notice Period
-        • Volunteer Work
-
-        They must appear like:
-
-        10. Achievements  
-        11. Awards  
-
-        --------------------------------------------------
-
-        OUTPUT RULES:
-
-        • Return FULL updated resume.
-        • Keep ALL existing text unchanged.
-        • Apply ONLY requested edit.
-        • Maintain numbering stability.
+        New sections start from 10 onward.
+        Return FULL updated resume.
+        Apply ONLY requested edit.
+        Keep all other content exactly same.
         """
 
         res = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a Resume Editor AI."},
-                {"role": "user", "content": edit_prompt}
+                {"role": "user",   "content": edit_prompt}
             ]
         )
 
         updated_resume = res.choices[0].message.content
+        updated_resume = re.sub(r"-{3,}", "", updated_resume)
+        updated_resume = re.sub(r"_{3,}", "", updated_resume)
         data["final_resume"] = updated_resume
-        # ✅ Add instruction message again after edit
 
-        if data["language"].lower().startswith("h"):
+        if lang_h:
             instruction_msg = (
                 "\n\n--------------------\n"
-                "✅ Resume update ho gaya hai.\n"
-                "Aap aur edit/add kar sakte hain.\n"
-                "⚠ Agar koi section hatana ho to template select karne ke baad manually remove karein.\n"
-                "Warna 🎨 Template icon par click karke design choose karein."
+                "✅ Resume update ho gaya!\n\n"
+                "✏️ Aur changes chahiye to likhein.\n"
+                "🎨 Ya Template button click karein."
             )
         else:
             instruction_msg = (
                 "\n\n--------------------\n"
-                "✅ Resume updated successfully.\n"
-                "You may edit or add more content.\n"
-                "⚠ If you want to remove any section, please remove it manually after selecting a template.\n"
-                "Otherwise click 🎨 Template icon to select a design."
+                "✅ Resume updated!\n\n"
+                "✏️ Need more changes? Just tell me.\n"
+                "🎨 Or click Template button to download."
             )
 
         updated_resume += instruction_msg
-
         session["resume_data"] = data
+        session.modified = True
 
-        return jsonify({"reply": updated_resume})
+        return jsonify({"reply": updated_resume, "step": "done"})
 
-    return jsonify({"reply": "Something went wrong."})
-
+    return jsonify({"reply": "Something went wrong. Please try again."})
 # ===============================
 # 🔥 NUMBER RESUME PARSER
 # ===============================
@@ -1298,13 +1129,10 @@ def template3_preview():
 
 @app.route("/check-resume")
 def check_resume():
-
-    data = session.get("resume_data", {})
-
-    if data.get("final_resume"):
-        return {"ready": True}
-    else:
-        return {"ready": False}
+    chat_data = session.get("resume_data", {}) or {}
+    jd_data   = session.get("jd_data", {}) or {}
+    ready = bool(chat_data.get("final_resume")) or bool(jd_data.get("final_resume"))
+    return jsonify({"ready": ready})
 # ===============================
 # GENERATE COVER LETTER
 # ===============================
@@ -2530,12 +2358,13 @@ def api_jd_chat():
 
     def save_and_reply(reply, chips=None, example=None, next_step=None):
         session["jd_data"] = data
+        session.modified = True
         if next_step:
             session["jd_step"] = next_step
         resp = {"reply": reply}
-        if chips:     resp["chips"]   = chips
+        if chips:     resp["chips"] = chips
         if example:   resp["example"] = example
-        if next_step: resp["step"]    = next_step
+        if next_step: resp["step"] = next_step
         return jsonify(resp)
 
     # ==============================
