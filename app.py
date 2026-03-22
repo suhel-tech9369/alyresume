@@ -38,6 +38,12 @@ razorpay_client = razorpay.Client(
 # Flask App
 # ===============================
 app = Flask(__name__)
+from flask_session import Session
+
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_FILE_DIR"] = "/tmp/flask_session"
+app.config["SESSION_PERMANENT"] = False
+Session(app)
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -272,7 +278,7 @@ def chat():
             "projects": None,
             "extra_notes": None,
             "final_resume": None,
-            "resume_json": None
+
         }
 
     return render_template("chat.html")
@@ -316,7 +322,7 @@ def api_chat():
             "companies": [], "education": None, "college": None,
             "completion_year": None, "languages": None, "skills": None,
             "projects": None, "extra_notes": None, "final_resume": None,
-            "resume_json": None
+
         }
         return jsonify({
             "reply": "👋 Welcome to Resume Chat!\n\nApni chat language chunein:\n• English — Chat in English\n• Hindi — Chat in Hindi+English\n\n(Resume hamesha English me banega)",
@@ -776,54 +782,6 @@ Type skip if nothing to add."""
         data["final_resume"] = final_resume
 
         # JSON conversion
-        json_prompt = f"""
-        Convert this NUMBERED resume into JSON.
-
-        Resume Text:
-        {final_resume}
-
-        Number Mapping:
-        1 → name
-        2 → contact
-        3 → skills
-        4 → languages
-        5 → summary
-        6 → education
-        7 → experience
-        10+ → extra_sections
-
-        JSON Format:
-        {{
-         "name":"",
-         "contact":{{"email":"","phone":"","address":""}},
-         "skills":[],
-         "languages":[],
-         "summary":"",
-         "education":[],
-         "experience":[],
-         "extra_sections":[{{"title":"","content":[]}}]
-        }}
-
-        Return ONLY JSON.
-        """
-
-        json_res = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Return only JSON."},
-                {"role": "user",   "content": json_prompt}
-            ]
-        )
-
-        ai_text = json_res.choices[0].message.content.strip()
-
-        if not ai_text:
-            return jsonify({"error": "AI response empty. Please retry."}), 500
-
-        try:
-            data["resume_json"] = json.loads(ai_text)
-        except json.JSONDecodeError:
-            return jsonify({"error": "AI returned invalid JSON. Retry."}), 500
 
         if lang_h:
             instruction_msg = (
@@ -889,7 +847,10 @@ Type skip if nothing to add."""
         New sections start from 10 onward.
         Return FULL updated resume.
         Apply ONLY requested edit.
+        - Do NOT rewrite any section that user did not ask to change
+        - Copy other sections EXACTLY word for word from current resume
         Keep all other content exactly same.
+        
         """
 
         res = client.chat.completions.create(
@@ -1131,7 +1092,9 @@ def template3_preview():
 def check_resume():
     chat_data = session.get("resume_data", {}) or {}
     jd_data   = session.get("jd_data", {}) or {}
-    ready = bool(chat_data.get("final_resume")) or bool(jd_data.get("final_resume"))
+    chat_resume = chat_data.get("final_resume", "")
+    jd_resume   = jd_data.get("final_resume", "")
+    ready = (len(chat_resume.strip()) > 50) or (len(jd_resume.strip()) > 50)
     return jsonify({"ready": ready})
 # ===============================
 # GENERATE COVER LETTER
@@ -2955,6 +2918,8 @@ STRICT RULES:
 - Return FULL updated resume
 - Apply ONLY the requested change
 - Keep all other content exactly same
+- Do NOT rewrite any section that user did not ask to change
+- Copy other sections EXACTLY word for word from current resume
 - Maintain numbered format strictly
 """
 

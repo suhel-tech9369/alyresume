@@ -51,37 +51,30 @@ document.addEventListener("DOMContentLoaded", function () {
   // ==============================
   function addMsg(text, sender, chips, exampleText) {
 
-    // Remove any old floating chips
-    document.querySelectorAll(".chips-wrap").forEach(w => w.remove());
-
     const msg = document.createElement("div");
     msg.classList.add("msg", sender);
 
-    // Bold + newline support
     const formatted = text
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/\n/g, "<br>");
 
     msg.innerHTML = formatted;
 
-    // Example hint — inside bubble, italic muted
+    // Example hint — inside bubble
     if (exampleText) {
-      const hint     = document.createElement("div");
-      hint.className = "example-hint";
+      const hint       = document.createElement("div");
+      hint.className   = "example-hint";
       hint.textContent = "💡 " + exampleText;
       msg.appendChild(hint);
     }
 
-    chatBox.appendChild(msg);
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    // Chips — OUTSIDE bubble, below it
+    // Chips — INSIDE bubble (same as JD)
     if (chips && chips.length) {
       const wrap     = document.createElement("div");
       wrap.className = "chips-wrap";
       chips.forEach(c => {
-        const chip     = document.createElement("button");
-        chip.className = "chip";
+        const chip       = document.createElement("button");
+        chip.className   = "chip";
         chip.textContent = c;
         chip.addEventListener("click", function () {
           document.querySelectorAll(".chips-wrap").forEach(w => w.remove());
@@ -90,9 +83,11 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         wrap.appendChild(chip);
       });
-      chatBox.appendChild(wrap);
-      chatBox.scrollTop = chatBox.scrollHeight;
+      msg.appendChild(wrap);  // ← ANDAR — SAHI
     }
+
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
   }
 
   // ==============================
@@ -155,8 +150,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // ==============================
   async function sendMessage() {
 
-    document.querySelectorAll(".chips-wrap").forEach(w => w.remove());
-
     const message = userInput.value.trim();
     if (!message) return;
 
@@ -174,7 +167,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
       removeTyping();
 
-      // Update progress from backend step
       if (data.step) updateProgress(data.step);
 
       if (data.generating) {
@@ -245,6 +237,7 @@ document.addEventListener("DOMContentLoaded", function () {
       btn.className   = "generate-btn";
 
       btn.onclick = async function () {
+        await new Promise(r => setTimeout(r, 700));
         const res  = await fetch("/check-resume");
         const data = await res.json();
         if (!data.ready) {
