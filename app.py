@@ -2977,6 +2977,21 @@ def check_jd_resume():
     data = session.get("jd_data", {})
     return {"ready": bool(data.get("final_resume"))}
 
+@app.route("/blog/interview-questions")
+def interview_blog():
+    return render_template("interview-questions.html")
+@app.route("/blog/jd-resume")
+def jd_blog():
+    return render_template("jd-resume-blog.html")
+
+@app.route("/blog/cover-letter")
+def cover_letter_blog():
+    return render_template("cover-letter-blog.html")
+
+@app.route("/blog/ats-checker")
+def ats_blog():
+    return render_template("ats-checker-blog.html")
+
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT",10000))
