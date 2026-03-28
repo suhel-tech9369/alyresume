@@ -100,4 +100,9 @@
   <priority>0.9</priority>
   <changefreq>monthly</changefreq>
 </url>
+<url>
+  <loc>https://alyresume.com/blog/job-role-resume</loc>
+  <priority>0.9</priority>
+  <changefreq>monthly</changefreq>
+</url>
 </urlset>

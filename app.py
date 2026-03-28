@@ -2991,6 +2991,9 @@ def cover_letter_blog():
 @app.route("/blog/ats-checker")
 def ats_blog():
     return render_template("ats-checker-blog.html")
+@app.route("/blog/job-role-resume")
+def job_role_blog():
+    return render_template("job-role-resume.html")
 
 if __name__ == "__main__":
 
