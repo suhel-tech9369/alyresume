@@ -1087,13 +1087,55 @@ def template3_preview():
         }
     )
 
+# ===============================
+# TEMPLATE 4 PREVIEW ROUTE
+# ===============================
+@app.route("/template4-preview")
+def template4_preview():
+    data = session.get("resume_data", {})
+    country = data.get("apply_country", "")
+    if not data.get("final_resume"):
+        return "Resume not generated yet!"
+
+    resume_text = data["final_resume"]
+    resume_text = resume_text.split("--------------------")[0].strip()
+
+    sections = parse_numbered_resume(resume_text)
+
+    summary_section = sections.get("5", {})
+    summary_content = summary_section.get("content", "")
+
+    summary_content = re.sub(r"\n{2,}", "\n", summary_content)
+    summary_content = summary_content.strip()
+    summary_content = summary_content.replace("\n", " ")
+
+    sections["5"]["content"] = summary_content
+
+    return render_template(
+        "template4.html",
+        apply_country=country,
+        contact=sections.get("2", {}),
+        skills=sections.get("3", {}),
+        languages=sections.get("4", {}),
+        name=sections.get("1", {}),
+        summary=sections.get("5", {}),
+        education=sections.get("6", {}),
+        experience=sections.get("7", {}),
+        certifications=sections.get("8", {}),
+        projects=sections.get("9", {}),
+        job_role=data.get("job_role"),
+        extra_sections={
+            k: v for k, v in sections.items()
+            if int(k) > 9
+        }
+    )
 
 @app.route("/check-resume")
 def check_resume():
     chat_data = session.get("resume_data", {}) or {}
     jd_data   = session.get("jd_data", {}) or {}
-    chat_resume = chat_data.get("final_resume", "")
-    jd_resume   = jd_data.get("final_resume", "")
+    chat_resume = chat_data.get("final_resume") or ""
+    jd_resume   = jd_data.get("final_resume") or ""
     ready = (len(chat_resume.strip()) > 50) or (len(jd_resume.strip()) > 50)
     return jsonify({"ready": ready})
 # ===============================

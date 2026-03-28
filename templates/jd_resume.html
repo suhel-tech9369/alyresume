@@ -175,7 +175,7 @@ Responsibilities: Build REST APIs, manage cloud infra..."></textarea>
 <!-- ===== TEMPLATE POPUP ===== -->
 <div id="jdTemplatePopup" class="jd-template-popup">
   <div class="jd-popup-box">
-
+ <button id="jdCloseTemplate" class="jd-close-btn">Close</button>
     <h3>Select Resume Template</h3>
 
     <div class="jd-template-grid">
@@ -197,10 +197,15 @@ Responsibilities: Build REST APIs, manage cloud infra..."></textarea>
         <p>Template 3</p>
         <span class="price-tag blue">₹49</span>
       </div>
+	  
+	  <div class="jd-template-card" data-template="4">
+  <img src="{{ url_for('static', filename='template4.jpg') }}" alt="Template 4">
+  <p>Template 4</p>
+  <span class="price-tag blue">₹49</span>
 
     </div>
 
-    <button id="jdCloseTemplate" class="jd-close-btn">Close</button>
+   
 
   </div>
 </div>

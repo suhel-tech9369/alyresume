@@ -92,8 +92,11 @@ edit and download your resume easily without any signup.
 <!-- ===== TEMPLATE POPUP ===== -->
 <div id="templatePopup" class="template-popup">
   <div class="popup-box">
+  <button id="closeTemplate" class="close-btn">Close</button>
 
     <h3>Select Resume Template</h3>
+	
+	
 
     <div class="template-grid">
 
@@ -114,10 +117,16 @@ edit and download your resume easily without any signup.
         <p>Template 3</p>
         <span class="price-tag blue">₹49</span>
       </div>
+	  
+	  <div class="template-card" data-template="4">
+  <img src="{{ url_for('static', filename='template4.jpg') }}" alt="Template 4">
+  <p>Template 4</p>
+  <span class="price-tag blue">₹49</span>
+</div>
 
     </div>
 
-    <button id="closeTemplate" class="close-btn">Close</button>
+
 
   </div>
 </div>

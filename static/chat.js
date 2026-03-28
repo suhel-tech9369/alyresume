@@ -237,7 +237,7 @@ document.addEventListener("DOMContentLoaded", function () {
       btn.className   = "generate-btn";
 
       btn.onclick = async function () {
-        await new Promise(r => setTimeout(r, 700));
+        await new Promise(r => setTimeout(r, 300));
         const res  = await fetch("/check-resume");
         const data = await res.json();
         if (!data.ready) {
